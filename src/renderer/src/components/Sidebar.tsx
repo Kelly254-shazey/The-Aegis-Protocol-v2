@@ -1,127 +1,252 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  Link2,
-  MonitorSmartphone,
-  Settings,
   Shield,
-  Wifi,
+  QrCode,
+  ShieldAlert,
+  Settings,
+  Radio,
+  Eye,
+  EyeOff,
+  Lock
 } from 'lucide-react'
-import { useAegisStore } from '../store/useAegisStore'
-
-const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { to: '/pair', label: 'Pair Device', icon: Link2 },
-  { to: '/provider', label: 'Provider Quota', icon: Shield },
-  { to: '/devices', label: 'Trusted Devices', icon: MonitorSmartphone },
-  { to: '/settings', label: 'Settings', icon: Settings },
-]
+import { useAegisStore, maskDeviceId } from '../store/useAegisStore'
+import { AdminAuthModal } from './AdminAuthModal'
 
 export default function Sidebar() {
-  const { peers, connectionStatus } = useAegisStore()
-  const onlinePeers = peers.filter((p) => p.status === 'online').length
-  const location = useLocation()
+  const {
+    connectionStatus,
+    myId,
+    privacyMode,
+    togglePrivacyMode,
+    isDegradedConnection,
+    threats,
+    feedbacks,
+    appPortalMode,
+    setAppPortalMode,
+    adminUnlocked,
+    lockAdminPortal
+  } = useAegisStore()
+
+  const navigate = useNavigate()
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
+  const blockedThreats = threats.filter((t) => t.status === 'blocked').length
+  const activeThreats = threats.filter((t) => t.status === 'active').length
+  const newFeedback = feedbacks.filter((f) => f.status === 'new').length
+  const adminBadgeCount = blockedThreats + activeThreats + newFeedback
+
+  // Strict Navigation Separation: System Settings ONLY in Admin
+  const CLIENT_NAV_ITEMS = [
+    { to: '/', label: 'Connect & Shield', icon: Shield, shortcut: '1', exact: true },
+    { to: '/portal', label: 'Access Passes', icon: Radio, shortcut: '2' },
+    { to: '/pair', label: 'Share Network & QR', icon: QrCode, shortcut: '3' }
+  ]
+
+  const ADMIN_NAV_ITEMS = [
+    { to: '/admin', label: 'Admin Command Console', icon: ShieldAlert, shortcut: '1', exact: true },
+    { to: '/settings', label: 'System & Cloud Settings', icon: Settings, shortcut: '2' },
+    { to: '/pair', label: 'Fleet Topologies & QR', icon: QrCode, shortcut: '3' },
+    { to: '/', label: 'Client View Preview', icon: Shield, shortcut: '4' }
+  ]
+
+  const navItems = appPortalMode === 'admin' ? ADMIN_NAV_ITEMS : CLIENT_NAV_ITEMS
+
+  const handleSwitchToAdmin = () => {
+    if (adminUnlocked) {
+      setAppPortalMode('admin')
+      navigate('/admin')
+    } else {
+      setShowAuthModal(true)
+    }
+  }
+
+  const handleSwitchToClient = () => {
+    lockAdminPortal()
+    navigate('/')
+  }
 
   return (
     <aside className="sidebar">
-      {/* Logo */}
-      <div className="sidebar-logo">
-        <div className="logo-icon">
-          <svg className="logo-shield" viewBox="0 0 40 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M20 2L3 9V22C3 31.9 10.5 41.1 20 44C29.5 41.1 37 31.9 37 22V9L20 2Z"
-              fill="url(#shield-grad)"
-              stroke="#D4A017"
-              strokeWidth="1.5"
-            />
-            <path
-              d="M20 10L10 14.5V22C10 28 14.5 33.5 20 35.5C25.5 33.5 30 28 30 22V14.5L20 10Z"
-              fill="rgba(212,160,23,0.2)"
-              stroke="rgba(212,160,23,0.6)"
-              strokeWidth="1"
-            />
-            <path
-              d="M15 22L18.5 25.5L25 18"
-              stroke="#F5C842"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <defs>
-              <linearGradient id="shield-grad" x1="20" y1="2" x2="20" y2="44" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#1a2750" />
-                <stop offset="100%" stopColor="#080c18" />
-              </linearGradient>
-            </defs>
-          </svg>
-
+      <div>
+        {/* Workspace Brand Header */}
+        <div className="sidebar-header">
+          <div
+            className="sidebar-logo"
+            style={{
+              background: appPortalMode === 'admin'
+                ? 'linear-gradient(135deg, rgba(230, 180, 80, 0.3) 0%, rgba(200, 40, 40, 0.25) 100%)'
+                : 'linear-gradient(135deg, rgba(0, 113, 227, 0.3) 0%, rgba(0, 245, 212, 0.2) 100%)',
+              borderColor: appPortalMode === 'admin' ? 'var(--gold)' : 'var(--blue-bright)'
+            }}
+          >
+            <Shield size={16} color={appPortalMode === 'admin' ? 'var(--gold-bright)' : '#00D2FF'} />
+          </div>
           <div>
-            <div className="logo-title">AEGIS</div>
-            <div className="logo-subtitle">Protocol</div>
+            <div className="sidebar-brand-title">
+              {appPortalMode === 'admin' ? 'AEGIS OVERSEER' : 'THE AEGIS PROTOCOL'}
+            </div>
+            <div className="sidebar-brand-sub" style={{ color: appPortalMode === 'admin' ? 'var(--gold)' : 'var(--text-muted)' }}>
+              {appPortalMode === 'admin' ? 'Master Admin Infrastructure' : 'Anonymous Client Portal'}
+            </div>
           </div>
         </div>
+
+        {/* Navigation Items */}
+        <nav className="sidebar-nav">
+          {navItems.map(({ to, label, icon: Icon, shortcut, exact }) => (
+            <NavLink
+              key={to + label}
+              to={to}
+              end={exact}
+              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+            >
+              <div className="nav-link-content">
+                <Icon size={16} />
+                <span>{label}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {label === 'Admin Command Console' && adminBadgeCount > 0 && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: '1px 6px',
+                      borderRadius: 999,
+                      background: activeThreats > 0 ? 'var(--danger)' : 'var(--blue)',
+                      color: '#fff'
+                    }}
+                  >
+                    {adminBadgeCount}
+                  </span>
+                )}
+                <span className="shortcut-badge">{shortcut}</span>
+              </div>
+            </NavLink>
+          ))}
+        </nav>
       </div>
 
-      {/* Nav */}
-      <nav className="sidebar-nav">
-        <div className="nav-section-label">Navigation</div>
-        {NAV_ITEMS.map(({ to, label, icon: Icon, exact }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={exact}
-            className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+      {/* Footer Info: Portal Switcher, Identity & Status */}
+      <div className="sidebar-footer">
+        {/* Role Portal Switcher Button */}
+        {appPortalMode === 'client' ? (
+          <button
+            onClick={handleSwitchToAdmin}
+            className="btn btn-outline btn-sm"
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              fontSize: 11,
+              borderColor: 'rgba(230, 180, 80, 0.35)',
+              color: 'var(--gold-bright)',
+              background: 'rgba(230, 180, 80, 0.08)',
+              padding: '6px 10px',
+              borderRadius: 8,
+              marginBottom: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
           >
-            <Icon className="nav-item-icon" size={16} />
-            {label}
-            {label === 'Trusted Devices' && onlinePeers > 0 && (
-              <span className="nav-badge">{onlinePeers}</span>
-            )}
-          </NavLink>
-        ))}
+            <Lock size={12} />
+            <span>Admin Overseer Portal</span>
+          </button>
+        ) : (
+          <button
+            onClick={handleSwitchToClient}
+            className="btn btn-outline btn-sm"
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              fontSize: 11,
+              borderColor: 'rgba(255, 69, 58, 0.4)',
+              color: 'var(--danger)',
+              background: 'rgba(255, 69, 58, 0.08)',
+              padding: '6px 10px',
+              borderRadius: 8,
+              marginBottom: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            <Lock size={12} />
+            <span>Lock & Return to Client</span>
+          </button>
+        )}
 
-        <div className="nav-section-label" style={{ marginTop: 12 }}>Network</div>
+        {/* Identity with Privacy Mode */}
         <div
-          className="nav-item"
           style={{
-            cursor: 'default',
-            background: 'transparent',
-            borderColor: 'transparent',
+            background: 'rgba(0, 0, 0, 0.25)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '8px 10px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2
           }}
         >
-          <Wifi size={16} className="nav-item-icon" style={{ opacity: 0.5 }} />
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            {connectionStatus === 'connected'
-              ? `${onlinePeers} peer${onlinePeers !== 1 ? 's' : ''} online`
-              : 'Not connected'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              {appPortalMode === 'admin' ? 'Admin Node' : 'Client Node ID'}
+            </span>
+            <button
+              onClick={togglePrivacyMode}
+              title={privacyMode ? 'Reveal Device Identifier' : 'Mask Device Identifier'}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                padding: 2
+              }}
+            >
+              {privacyMode ? <EyeOff size={12} /> : <Eye size={12} />}
+            </button>
+          </div>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: 'var(--text-primary)', fontWeight: 600 }}>
+            {maskDeviceId(myId, privacyMode)}
+          </div>
         </div>
-      </nav>
 
-      {/* Footer */}
-      <div className="sidebar-footer">
-        {/* Admin Card */}
-        <div className="admin-card">
-          <div className="admin-label">Administrator</div>
-          <div className="admin-name">
-            <Shield
-              size={10}
-              style={{ display: 'inline', marginRight: 4, color: 'var(--gold)' }}
+        {/* Live Status Pill */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '4px 6px',
+            fontSize: 11,
+            color: 'var(--text-secondary)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: isDegradedConnection
+                  ? 'var(--danger)'
+                  : connectionStatus === 'connected'
+                    ? 'var(--success)'
+                    : 'var(--text-muted)',
+                boxShadow: isDegradedConnection ? '0 0 8px var(--danger)' : '0 0 8px var(--success)'
+              }}
             />
-            System Admin
+            <span style={{ fontSize: 11 }}>
+              {connectionStatus === 'connected' ? 'Mesh Online' : 'Standby'}
+            </span>
           </div>
-          <div className="status-dot-row">
-            <div className="status-dot" />
-            <span className="status-dot-label">Active Session</span>
-          </div>
-        </div>
-
-        {/* Founder Credit */}
-        <div className="founder-credit">
-          <div className="founder-text">Founded by</div>
-          <div className="founder-name">Javaln Mwei</div>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>v2.5.0</span>
         </div>
       </div>
+
+      <AdminAuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </aside>
   )
 }

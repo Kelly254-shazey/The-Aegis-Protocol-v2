@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # 1. 24/7 Aegis Captive Portal & Anonymity API Service
+  aegis-portal:
+    build: .
+    container_name: aegis-portal
+    restart: always
+    ports:
+      - "3888:3888"
+    environment:
+      - PORT=3888
+      - HOST=0.0.0.0
+    networks:
+      - aegis-net
+
+  # 2. Caddy Reverse Proxy (Automatic HTTPS / Let's Encrypt for your domain)
+  caddy:
+    image: caddy:2-alpine
+    container_name: aegis-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - aegis-portal
+    networks:
+      - aegis-net
+
+networks:
+  aegis-net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:

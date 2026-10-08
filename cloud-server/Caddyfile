@@ -1,0 +1,16 @@
+# Replace 'wifi.yourdomain.com' with your actual domain name.
+# Caddy will automatically obtain and renew free Let's Encrypt SSL certificates.
+# If you only have an IP address, use: :80 { reverse_proxy aegis-portal:3888 }
+
+wifi.yourdomain.com {
+    reverse_proxy aegis-portal:3888
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+    }
+
+    encode gzip zstd
+}
