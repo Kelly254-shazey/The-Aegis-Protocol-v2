@@ -459,8 +459,37 @@ PersistentKeepalive = 25
 
   // --- API ROUTE: Get Available Provider Ingress Uplinks ---
   if (url.pathname === '/api/mesh/providers' && req.method === 'GET') {
+    const totalPoolMbps = providerUplinks.reduce((sum, p) => sum + (p.bandwidthMbps || 100), 0)
     res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ providers: providerUplinks }))
+    res.end(
+      JSON.stringify({
+        providers: providerUplinks,
+        totalPoolMbps,
+        activeRoutersCount: providerUplinks.filter((p) => p.status === 'online').length
+      })
+    )
+    return
+  }
+
+  // --- SCRIPT: 1-Click Hardware Router Provisioner (OpenWrt / Linux / Raspberry Pi) ---
+  if (url.pathname === '/install-router.sh' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' })
+    res.end(`#!/bin/sh
+# The Aegis Protocol — Hardware Router Provisioner
+set -e
+
+ROUTER_NAME=$(cat /proc/sys/kernel/hostname 2>/dev/null || uname -n || echo "Aegis-Hardware-Router")
+ROUTER_ID="router-$(cat /sys/class/net/eth0/address 2>/dev/null | tr -d ':' || cat /sys/class/net/wlan0/address 2>/dev/null | tr -d ':' || echo "hw-$RANDOM")"
+
+echo "🛡️  Registering Hardware Router [$ROUTER_NAME] to Aegis Cloud Relay..."
+
+curl -s -X POST https://172-209-217-140.sslip.io/api/provider/register \\
+  -H "Content-Type: application/json" \\
+  -d "{\\"id\\":\\"$ROUTER_ID\\",\\"name\\":\\"$ROUTER_NAME\\",\\"type\\":\\"hardware_router\\",\\"location\\":\\"Distributed Ingress Node\\",\\"bandwidthMbps\\":100,\\"isHomeRouter\\":true}"
+
+echo ""
+echo "🎉 Router $ROUTER_NAME successfully joined the Aegis Unified Mesh Channel!"
+`)
     return
   }
 
@@ -489,11 +518,27 @@ PersistentKeepalive = 25
           blindedIp: blindedRouterIp,
           macAddressScrubbed: true,
           realIpHidden: true,
-          antiMitmShield: 'Noise_XX_25519 (0 IP/MAC Leak)'
+          antiMitmShield: 'Noise_XX_25519 (0 IP/MAC Leak)',
+          registeredAt: Date.now()
         }
-        providerUplinks.push(newUplink)
+
+        const existingIdx = providerUplinks.findIndex((u) => u.id === newUplink.id)
+        if (existingIdx >= 0) {
+          providerUplinks[existingIdx] = newUplink
+        } else {
+          providerUplinks.push(newUplink)
+        }
+
+        const totalPoolMbps = providerUplinks.reduce((sum, p) => sum + (p.bandwidthMbps || 100), 0)
         res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ status: 'registered', uplink: newUplink }))
+        res.end(
+          JSON.stringify({
+            status: 'registered',
+            uplink: newUplink,
+            totalPoolMbps,
+            routerCount: providerUplinks.length
+          })
+        )
         return
       } catch {}
       res.writeHead(400, { 'Content-Type': 'application/json' })
@@ -1193,11 +1238,18 @@ PersistentKeepalive = 25
             <div class="telemetry-label">Shield Integrity</div>
             <div class="telemetry-val" style="color: var(--green);">Noise_XX_25519</div>
           </div>
+          <div class="telemetry-item" style="grid-column: span 2;">
+            <div class="telemetry-label">Unified Ingress Fleet</div>
+            <div class="telemetry-val" id="telemetryFleet" style="color: var(--cyan); font-size: 11.5px;">Aggregated Multi-Router Pool (Online)</div>
+          </div>
         </div>
 
         <!-- Connection State Toggle -->
         <div id="activeSessionBox" style="display: none; text-align: center; padding: 12px 0;">
-          <div class="badge badge-green">● SECURE TUNNEL ACTIVE</div>
+          <div class="badge badge-green">● UNIFIED MESH TUNNEL ACTIVE</div>
+          <div id="meshPoolBadge" style="font-size: 11px; color: var(--cyan); margin: 4px 0 6px; font-weight: 700;">
+            Aggregated Across All Active Routers · Auto-Balanced
+          </div>
           <div id="timerDisplay" class="timer-display">29:59</div>
           <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
             Remaining Session Quota · 0 IP Leak Enforced
@@ -1362,6 +1414,23 @@ PersistentKeepalive = 25
       }
       ping();
       setInterval(ping, 6000);
+
+      async function updateMeshPool() {
+        try {
+          const res = await fetch('/api/mesh/providers');
+          if (res.ok) {
+            const data = await res.json();
+            const fleetEl = document.getElementById('telemetryFleet');
+            const badgeEl = document.getElementById('meshPoolBadge');
+            const count = data.activeRoutersCount || (data.providers ? data.providers.length : 1);
+            const mbps = data.totalPoolMbps || 100;
+            if (fleetEl) fleetEl.innerText = count + ' Router' + (count > 1 ? 's' : '') + ' Online (' + mbps + ' Mbps)';
+            if (badgeEl) badgeEl.innerText = 'Aggregated: ' + mbps + ' Mbps across ' + count + ' Router' + (count > 1 ? 's' : '') + ' · Auto-Balanced';
+          }
+        } catch {}
+      }
+      updateMeshPool();
+      setInterval(updateMeshPool, 8000);
     }
 
     function renderPackages(pkgs) {
