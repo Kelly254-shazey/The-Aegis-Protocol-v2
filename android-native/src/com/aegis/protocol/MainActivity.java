@@ -1,28 +1,24 @@
 package com.aegis.protocol;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.net.VpnService;
-import android.net.http.SslError;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
-import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.wireguard.android.backend.Backend;
@@ -30,33 +26,27 @@ import com.wireguard.android.backend.GoBackend;
 import com.wireguard.android.backend.Tunnel;
 import com.wireguard.config.Config;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
     private static final String TAG = "AegisMainActivity";
     private static final int VPN_REQUEST_CODE = 0xAE61;
-    private static final String PORTAL_URL = "https://172-209-217-140.sslip.io";
-
-    private static final String DEFAULT_WG_CONFIG =
-            "[Interface]\n" +
-            "PrivateKey = OFZmrh2n9ATyqyBDvTSLzWZcQ7yEHmqpV+VRQ99ZEUI=\n" +
-            "Address = 10.66.66.2/24\n" +
-            "DNS = 1.1.1.1, 8.8.8.8\n\n" +
-            "[Peer]\n" +
-            "PublicKey = 73qDgl+OL2zLEXOq03Q+oW3NWb1HoXETCLYMGqPeChY=\n" +
-            "Endpoint = 172.209.217.140:51820\n" +
-            "AllowedIPs = 0.0.0.0/0\n" +
-            "PersistentKeepalive = 25\n";
+    private static final String PREFS_NAME = "aegis_config";
+    private static final String KEY_HOST = "endpoint_host";
+    private static final String KEY_PORT = "endpoint_port";
 
     private WebView mWebView;
-    private Button mNativeConnectBtn;
-    private TextView mNativeStatusText;
     private Backend mBackend;
     private final Tunnel mTunnel = new AegisTunnel("aegis0");
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
     private boolean mIsConnected = false;
+    private SharedPreferences mPrefs;
 
     private static class AegisTunnel implements Tunnel {
         private final String name;
@@ -72,7 +62,7 @@ public class MainActivity extends Activity {
 
         @Override
         public void onStateChange(Tunnel.State newState) {
-            Log.i(TAG, "WireGuard Tunnel State changed to: " + newState);
+            Log.i(TAG, "WireGuard Tunnel State: " + newState);
         }
     }
 
@@ -80,14 +70,20 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Root container: FrameLayout
+        mPrefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+
+        // Immersive Dark Theme Window
+        Window window = getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.setStatusBarColor(Color.parseColor("#050811"));
+        window.setNavigationBarColor(Color.parseColor("#050811"));
+
         FrameLayout rootLayout = new FrameLayout(this);
         rootLayout.setLayoutParams(new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
         rootLayout.setBackgroundColor(Color.parseColor("#050811"));
 
-        // 1. Hardware Accelerated WebView
         mWebView = new WebView(this);
         mWebView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -99,69 +95,21 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
 
         mWebView.addJavascriptInterface(new AegisJsBridge(), "AndroidAegis");
-
         mWebView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-                // SSL handler for sslip.io / Cloud VM certificates
-                handler.proceed();
-            }
-
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 notifyWebUiState(mIsConnected);
             }
         });
-
         mWebView.setWebChromeClient(new WebChromeClient());
+
         rootLayout.addView(mWebView);
-
-        // 2. Native Floating Control Bar at the Bottom
-        // This ensures the user can ALWAYS tap Connect even before any web page loads!
-        LinearLayout bottomBar = new LinearLayout(this);
-        bottomBar.setOrientation(LinearLayout.VERTICAL);
-        bottomBar.setPadding(32, 24, 32, 32);
-        bottomBar.setBackgroundColor(Color.parseColor("#E60b1329")); // Deep slate frosted glass
-
-        FrameLayout.LayoutParams barParams = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-        barParams.gravity = Gravity.BOTTOM;
-        bottomBar.setLayoutParams(barParams);
-
-        mNativeStatusText = new TextView(this);
-        mNativeStatusText.setText("🛡️ THE AEGIS PROTOCOL: STANDBY (0 IP LEAK)");
-        mNativeStatusText.setTextColor(Color.parseColor("#94a3b8"));
-        mNativeStatusText.setTextSize(12);
-        mNativeStatusText.setGravity(Gravity.CENTER);
-        mNativeStatusText.setPadding(0, 0, 0, 16);
-        bottomBar.addView(mNativeStatusText);
-
-        mNativeConnectBtn = new Button(this);
-        mNativeConnectBtn.setText("CONNECT TO ANONYMOUS INTERNET");
-        mNativeConnectBtn.setTextColor(Color.parseColor("#050811"));
-        mNativeConnectBtn.setTextSize(15);
-        mNativeConnectBtn.setTypeface(Typeface.DEFAULT_BOLD);
-        mNativeConnectBtn.setBackgroundColor(Color.parseColor("#06b6d4")); // Aegis Cyan
-        mNativeConnectBtn.setPadding(32, 32, 32, 32);
-        mNativeConnectBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mIsConnected) {
-                    disconnectVpnInternal();
-                } else {
-                    prepareAndConnectVpn();
-                }
-            }
-        });
-        bottomBar.addView(mNativeConnectBtn);
-
-        rootLayout.addView(bottomBar);
         setContentView(rootLayout);
 
         // Initialize WireGuard GoBackend
@@ -175,7 +123,7 @@ public class MainActivity extends Activity {
                     mMainHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            updateUiState(mIsConnected);
+                            notifyWebUiState(mIsConnected);
                         }
                     });
                 } catch (Exception e) {
@@ -184,8 +132,16 @@ public class MainActivity extends Activity {
             }
         }).start();
 
-        // Load the Aegis Cloud Portal
-        mWebView.loadUrl(PORTAL_URL);
+        // Load the local self-contained Aegis Cockpit UI
+        mWebView.loadUrl("file:///android_asset/index.html");
+    }
+
+    private String getSavedHost() {
+        return mPrefs.getString(KEY_HOST, "172.209.217.140");
+    }
+
+    private int getSavedPort() {
+        return mPrefs.getInt(KEY_PORT, 51820);
     }
 
     private void prepareAndConnectVpn() {
@@ -198,6 +154,7 @@ public class MainActivity extends Activity {
             }
         } catch (Exception e) {
             Toast.makeText(this, "VPN Prepare Failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            notifyWebUiState(false);
         }
     }
 
@@ -209,15 +166,12 @@ public class MainActivity extends Activity {
                 connectVpnInternal();
             } else {
                 Toast.makeText(this, "VPN permission denied by user", Toast.LENGTH_SHORT).show();
+                notifyWebUiState(false);
             }
         }
     }
 
     private void connectVpnInternal() {
-        mNativeConnectBtn.setEnabled(false);
-        mNativeConnectBtn.setText("ENGAGING ENCRYPTED MESH...");
-        mNativeStatusText.setText("⚡ Negotiating Noise IK Handshake with Azure Relay...");
-
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -225,7 +179,22 @@ public class MainActivity extends Activity {
                     if (mBackend == null) {
                         mBackend = new GoBackend(MainActivity.this);
                     }
-                    InputStream is = new ByteArrayInputStream(DEFAULT_WG_CONFIG.getBytes(StandardCharsets.UTF_8));
+
+                    String endpointHost = getSavedHost();
+                    int endpointPort = getSavedPort();
+
+                    String wgConfigString =
+                            "[Interface]\n" +
+                            "PrivateKey = OFZmrh2n9ATyqyBDvTSLzWZcQ7yEHmqpV+VRQ99ZEUI=\n" +
+                            "Address = 10.66.66.2/24\n" +
+                            "DNS = 1.1.1.1, 8.8.8.8\n\n" +
+                            "[Peer]\n" +
+                            "PublicKey = 73qDgl+OL2zLEXOq03Q+oW3NWb1HoXETCLYMGqPeChY=\n" +
+                            "Endpoint = " + endpointHost + ":" + endpointPort + "\n" +
+                            "AllowedIPs = 0.0.0.0/0\n" +
+                            "PersistentKeepalive = 25\n";
+
+                    InputStream is = new ByteArrayInputStream(wgConfigString.getBytes(StandardCharsets.UTF_8));
                     Config config = Config.parse(is);
 
                     mBackend.setState(mTunnel, Tunnel.State.UP, config);
@@ -234,10 +203,8 @@ public class MainActivity extends Activity {
                     mMainHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            updateUiState(true);
+                            notifyWebUiState(true);
                             Toast.makeText(MainActivity.this, "🛡️ Connected! All apps routed securely.", Toast.LENGTH_SHORT).show();
-                            // Reload webview now that tunnel is active
-                            mWebView.reload();
                         }
                     });
                 } catch (Exception e) {
@@ -247,7 +214,7 @@ public class MainActivity extends Activity {
                         @Override
                         public void run() {
                             mIsConnected = false;
-                            updateUiState(false);
+                            notifyWebUiState(false);
                             Toast.makeText(MainActivity.this, "Connection Error: " + err, Toast.LENGTH_LONG).show();
                         }
                     });
@@ -257,9 +224,6 @@ public class MainActivity extends Activity {
     }
 
     private void disconnectVpnInternal() {
-        mNativeConnectBtn.setEnabled(false);
-        mNativeConnectBtn.setText("DISCONNECTING...");
-
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -271,7 +235,7 @@ public class MainActivity extends Activity {
                     mMainHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            updateUiState(false);
+                            notifyWebUiState(false);
                             Toast.makeText(MainActivity.this, "Aegis Tunnel Disconnected", Toast.LENGTH_SHORT).show();
                         }
                     });
@@ -280,31 +244,12 @@ public class MainActivity extends Activity {
                     mMainHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            updateUiState(mIsConnected);
+                            notifyWebUiState(mIsConnected);
                         }
                     });
                 }
             }
         }).start();
-    }
-
-    private void updateUiState(boolean connected) {
-        mIsConnected = connected;
-        mNativeConnectBtn.setEnabled(true);
-        if (connected) {
-            mNativeConnectBtn.setText("DISCONNECT ANONYMOUS INTERNET");
-            mNativeConnectBtn.setBackgroundColor(Color.parseColor("#ef4444")); // Red for disconnect
-            mNativeConnectBtn.setTextColor(Color.WHITE);
-            mNativeStatusText.setText("🟢 ACTIVE: 100% TRAFFIC ROUTED TO AZURE + LAPTOP MESH");
-            mNativeStatusText.setTextColor(Color.parseColor("#10b981"));
-        } else {
-            mNativeConnectBtn.setText("CONNECT TO ANONYMOUS INTERNET");
-            mNativeConnectBtn.setBackgroundColor(Color.parseColor("#06b6d4")); // Cyan
-            mNativeConnectBtn.setTextColor(Color.parseColor("#050811"));
-            mNativeStatusText.setText("🛡️ THE AEGIS PROTOCOL: STANDBY (0 IP LEAK)");
-            mNativeStatusText.setTextColor(Color.parseColor("#94a3b8"));
-        }
-        notifyWebUiState(connected);
     }
 
     private void notifyWebUiState(final boolean connected) {
@@ -348,8 +293,69 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
-        public boolean isNative() {
-            return true;
+        public String getEndpoint() {
+            return getSavedHost() + ":" + getSavedPort();
+        }
+
+        @JavascriptInterface
+        public void setEndpoint(String host, int port) {
+            mPrefs.edit()
+                    .putString(KEY_HOST, host)
+                    .putInt(KEY_PORT, port)
+                    .apply();
+            Log.i(TAG, "Updated Endpoint: " + host + ":" + port);
+        }
+
+        @JavascriptInterface
+        public void testPipeline() {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    final long start = System.currentTimeMillis();
+                    try {
+                        URL url = new URL("https://api.ipify.org?format=json");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setConnectTimeout(6000);
+                        conn.setReadTimeout(6000);
+                        conn.setRequestMethod("GET");
+
+                        int code = conn.getResponseCode();
+                        if (code == 200) {
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                            StringBuilder sb = new StringBuilder();
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                sb.append(line);
+                            }
+                            reader.close();
+                            final long lat = System.currentTimeMillis() - start;
+                            final String msg = "<b>[✓] PIPELINE VERIFIED!</b><br/>Latency: " + lat + "ms<br/>Payload: " + sb.toString() + "<br/>Zero-Leak Shield: Active";
+                            mMainHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mWebView.evaluateJavascript("window.onPipelineTestResult(true, '" + msg + "');", null);
+                                }
+                            });
+                        } else {
+                            final String msg = "Server returned HTTP " + code;
+                            mMainHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mWebView.evaluateJavascript("window.onPipelineTestResult(false, '" + msg + "');", null);
+                                }
+                            });
+                        }
+                    } catch (final Exception e) {
+                        final String msg = "Pipeline test error: " + e.getMessage();
+                        mMainHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                mWebView.evaluateJavascript("window.onPipelineTestResult(false, '" + msg + "');", null);
+                            }
+                        });
+                    }
+                }
+            }).start();
         }
     }
 

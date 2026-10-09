@@ -56,11 +56,14 @@ $ClassFiles = Get-ChildItem -Recurse "$BuildDir\classes\*.class" | ForEach-Objec
     "android-native\libs\collection-1.2.0.jar" `
     "android-native\libs\annotation-1.6.0.jar"
 
-# 6. Assemble APK with classes.dex and native JNI libraries
-Write-Host "[5/6] Bundling classes.dex and native WireGuard Go engine (lib/)..." -ForegroundColor Yellow
+# 6. Assemble APK with classes.dex, assets, and native JNI libraries
+Write-Host "[5/6] Bundling classes.dex, assets, and native WireGuard Go engine (lib/)..." -ForegroundColor Yellow
 
 # Copy classes.dex into unaligned.apk
 & $Jar uf "$BuildDir\unaligned.apk" -C "$BuildDir\dex" classes.dex
+
+# Copy assets into unaligned.apk
+& $Jar uf "$BuildDir\unaligned.apk" -C "android-native" assets
 
 # Prepare native libraries directory (lib/arm64-v8a, lib/armeabi-v7a, etc.)
 $NativeStaging = "$BuildDir\native_staging"
@@ -85,9 +88,15 @@ $FinalApk = "$BuildDir\AegisProtocol.apk"
 # Verify signature
 & $ApkSigner verify -v $FinalApk
 
+# Also copy directly to cloud-server for immediate deployment
+Copy-Item -Force $FinalApk "cloud-server\AegisProtocol.apk"
+
 $ApkInfo = Get-Item $FinalApk
 Write-Host "==============================================================================" -ForegroundColor Green
 Write-Host "AEGIS PROTOCOL NATIVE ANDROID APK BUILT SUCCESSFULLY!" -ForegroundColor Green
 Write-Host "File: $($ApkInfo.FullName)" -ForegroundColor Green
 Write-Host "Size: $([math]::Round($ApkInfo.Length / 1MB, 2)) MB" -ForegroundColor Green
+Write-Host "Assets & UI: Bundled (file:///android_asset/index.html)" -ForegroundColor Green
+Write-Host "Copied to: cloud-server\AegisProtocol.apk" -ForegroundColor Green
 Write-Host "==============================================================================" -ForegroundColor Green
+

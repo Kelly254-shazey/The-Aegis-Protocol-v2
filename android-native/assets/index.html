@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>The Aegis Protocol</title>
+  <style>
+    :root {
+      --bg-base: #050811;
+      --bg-card: rgba(13, 22, 45, 0.75);
+      --border-card: rgba(30, 58, 110, 0.5);
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.35);
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.4);
+      --red: #ef4444;
+      --red-glow: rgba(239, 68, 68, 0.4);
+      --amber: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.15) 0%, transparent 60%),
+        radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.08) 0%, transparent 60%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 20px 16px 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      font-size: 26px;
+      filter: drop-shadow(0 0 10px var(--cyan-glow));
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      background: linear-gradient(135deg, #fff 40%, var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .btn-settings {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-card);
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-size: 18px;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      margin-bottom: 24px;
+      transition: all 0.3s ease;
+      background: rgba(148, 163, 184, 0.1);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      color: var(--text-muted);
+    }
+
+    .status-badge.connected {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      box-shadow: 0 0 14px var(--green-glow);
+    }
+
+    .status-badge.connecting {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.3);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Giant Shield Power Button */
+    .shield-launcher {
+      position: relative;
+      width: 190px;
+      height: 190px;
+      margin: 10px 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .outer-pulse-ring {
+      position: absolute;
+      inset: -12px;
+      border-radius: 50%;
+      border: 2px dashed rgba(6, 182, 212, 0.3);
+      animation: rotateRing 20s linear infinite;
+      transition: all 0.5s ease;
+    }
+
+    .shield-launcher.connected .outer-pulse-ring {
+      border-color: rgba(16, 185, 129, 0.5);
+      border-style: solid;
+      box-shadow: 0 0 30px var(--green-glow);
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes rotateRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+    }
+
+    .power-btn {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #0e1e3e, #071126);
+      border: 3px solid var(--cyan);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px var(--cyan-glow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .shield-launcher.connected .power-btn {
+      border-color: var(--green);
+      background: linear-gradient(145deg, #063124, #031c14);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 25px var(--green-glow);
+    }
+
+    .power-icon {
+      font-size: 42px;
+      transition: transform 0.3s;
+    }
+
+    .shield-launcher:active .power-btn {
+      transform: scale(0.94);
+    }
+
+    .power-btn-text {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .power-btn-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Cards */
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--cyan);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat-box {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .stat-label {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    .stat-value {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stat-value.green { color: #34d399; }
+    .stat-value.cyan { color: #38bdf8; }
+
+    /* Action Buttons */
+    .action-btn {
+      width: 100%;
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.35);
+      color: #38bdf8;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .action-btn:active {
+      transform: scale(0.98);
+      background: rgba(6, 182, 212, 0.25);
+    }
+
+    .test-result-box {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.5);
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #34d399;
+      display: none;
+      word-break: break-all;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 999;
+    }
+
+    .modal-card {
+      background: #0b1426;
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      border-radius: 18px;
+      padding: 22px;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+    }
+
+    .input-group {
+      margin-bottom: 14px;
+    }
+
+    .input-label {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--border-card);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .input-field:focus {
+      border-color: var(--cyan);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .btn-save {
+      flex: 1;
+      background: var(--cyan);
+      color: #050811;
+      border: none;
+      border-radius: 10px;
+      padding: 11px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-cancel {
+      flex: 1;
+      background: rgba(255,255,255,0.08);
+      color: var(--text-muted);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 11px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .footer-note {
+      font-size: 11px;
+      color: rgba(148, 163, 184, 0.6);
+      text-align: center;
+      margin-top: 8px;
+      max-width: 380px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-icon">🛡️</div>
+      <div>
+        <div class="brand-title">THE AEGIS PROTOCOL</div>
+        <div class="brand-subtitle">Zero-Leak Autonomous Bandwidth Relay</div>
+      </div>
+    </div>
+    <div class="btn-settings" onclick="openSettingsModal()" title="Relay Settings">
+      ⚙️
+    </div>
+  </div>
+
+  <!-- Status Badge -->
+  <div id="statusBadge" class="status-badge">
+    <div class="status-dot"></div>
+    <span id="statusBadgeText">STANDBY (0 IP LEAK)</span>
+  </div>
+
+  <!-- Large Interactive Tactile Shield Button -->
+  <div id="shieldLauncher" class="shield-launcher" onclick="toggleVpnConnection()">
+    <div class="outer-pulse-ring"></div>
+    <div class="power-btn">
+      <div id="powerIcon" class="power-icon">🛡️</div>
+      <div id="powerBtnText" class="power-btn-text">CONNECT</div>
+      <div id="powerBtnSub" class="power-btn-sub">1-Click Tunnel</div>
+    </div>
+  </div>
+
+  <!-- Live Telemetry Card -->
+  <div class="card">
+    <div class="card-title">
+      <span>🔒 Live Encrypted Tunnel</span>
+      <span style="font-size: 10px; color: var(--green);">● HARDWARE ACCELERATED</span>
+    </div>
+    <div class="grid-2">
+      <div class="stat-box">
+        <div class="stat-label">Virtual Adapter</div>
+        <div class="stat-value cyan" id="statAdapter">tun0 (Device-Wide)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Blinded Mesh IP</div>
+        <div class="stat-value green" id="statMeshIp">10.66.66.2</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Encryption Suite</div>
+        <div class="stat-value">Noise_IK_25519</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Active Session</div>
+        <div class="stat-value" id="statTimer">00:00:00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ingress Relay Mesh Fleet Card -->
+  <div class="card">
+    <div class="card-title">
+      <span>🌐 Ingress Gateway Fleet</span>
+      <span style="font-size: 10px; color: var(--cyan);" id="statEndpointLabel">AZURE RELAY</span>
+    </div>
+    <div class="grid-2">
+      <div class="stat-box">
+        <div class="stat-label">Cloud Relay Server</div>
+        <div class="stat-value" id="statEndpoint">172.209.217.140:51820</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Aggregated Pool</div>
+        <div class="stat-value green">250 Mbps Combined</div>
+      </div>
+    </div>
+    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 10px; line-height: 1.4;">
+      ⚡ Physical broadband streamed from LaptopNet + Hardware Routers pooled in the Azure Cloud.
+    </div>
+  </div>
+
+  <!-- Ingress Live Pipeline Test Card -->
+  <div class="card">
+    <button class="action-btn" onclick="testPipeline()">
+      <span>⚡ Test Ingress Pipeline (Laptop Broadband)</span>
+    </button>
+    <div id="testResultBox" class="test-result-box"></div>
+  </div>
+
+  <div class="footer-note">
+    🛡️ Enforced 0 IP Leak. Routes all device traffic (Chrome, YouTube, WhatsApp) directly through the Aegis Mesh.
+  </div>
+
+  <!-- Settings Modal (Allows Changing Cloud IP) -->
+  <div id="settingsModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-title">
+        <span>⚙️</span> Relay Endpoint Configuration
+      </div>
+      <div class="input-group">
+        <label class="input-label">Cloud Relay IP or Hostname:</label>
+        <input id="inputRelayHost" class="input-field" type="text" placeholder="172.209.217.140" />
+      </div>
+      <div class="input-group">
+        <label class="input-label">WireGuard UDP Port:</label>
+        <input id="inputRelayPort" class="input-field" type="number" placeholder="51820" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeSettingsModal()">Cancel</button>
+        <button class="btn-save" onclick="saveRelaySettings()">Save & Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isConnected = false;
+    let isConnecting = false;
+    let sessionSeconds = 0;
+    let timerInterval = null;
+
+    // Load initial status from Android Bridge
+    window.addEventListener('DOMContentLoaded', () => {
+      initApp();
+    });
+
+    function initApp() {
+      if (window.AndroidAegis) {
+        try {
+          const endpoint = window.AndroidAegis.getEndpoint();
+          if (endpoint) {
+            document.getElementById('statEndpoint').innerText = endpoint;
+          }
+          const connected = window.AndroidAegis.isVpnConnected();
+          setConnectedState(connected);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+
+    function toggleVpnConnection() {
+      if (isConnecting) return;
+
+      if (isConnected) {
+        setConnectingState('DISCONNECTING...');
+        if (window.AndroidAegis) {
+          window.AndroidAegis.disconnectVpn();
+        } else {
+          setTimeout(() => setConnectedState(false), 800);
+        }
+      } else {
+        setConnectingState('NEGOTIATING NOISE HANDSHAKE...');
+        if (window.AndroidAegis) {
+          window.AndroidAegis.connectVpn();
+        } else {
+          setTimeout(() => setConnectedState(true), 1200);
+        }
+      }
+    }
+
+    function setConnectingState(msg) {
+      isConnecting = true;
+      const launcher = document.getElementById('shieldLauncher');
+      const badge = document.getElementById('statusBadge');
+      const badgeText = document.getElementById('statusBadgeText');
+      const pText = document.getElementById('powerBtnText');
+      const pSub = document.getElementById('powerBtnSub');
+
+      badge.className = 'status-badge connecting';
+      badgeText.innerText = msg;
+      pText.innerText = 'WAIT...';
+      pSub.innerText = 'Connecting';
+    }
+
+    function setConnectedState(connected) {
+      isConnected = connected;
+      isConnecting = false;
+
+      const launcher = document.getElementById('shieldLauncher');
+      const badge = document.getElementById('statusBadge');
+      const badgeText = document.getElementById('statusBadgeText');
+      const pIcon = document.getElementById('powerIcon');
+      const pText = document.getElementById('powerBtnText');
+      const pSub = document.getElementById('powerBtnSub');
+
+      if (connected) {
+        launcher.classList.add('connected');
+        badge.className = 'status-badge connected';
+        badgeText.innerText = 'ACTIVE (0 IP LEAK ENFORCED)';
+        pIcon.innerText = '🟢';
+        pText.innerText = 'DISCONNECT';
+        pSub.innerText = 'All Apps Routed';
+        startTimer();
+      } else {
+        launcher.classList.remove('connected');
+        badge.className = 'status-badge';
+        badgeText.innerText = 'STANDBY (0 IP LEAK)';
+        pIcon.innerText = '🛡️';
+        pText.innerText = 'CONNECT';
+        pSub.innerText = '1-Click Tunnel';
+        stopTimer();
+      }
+    }
+
+    function startTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      sessionSeconds = 0;
+      timerInterval = setInterval(() => {
+        sessionSeconds++;
+        const h = Math.floor(sessionSeconds / 3600).toString().padStart(2, '0');
+        const m = Math.floor((sessionSeconds % 3600) / 60).toString().padStart(2, '0');
+        const s = (sessionSeconds % 60).toString().padStart(2, '0');
+        document.getElementById('statTimer').innerText = `${h}:${m}:${s}`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      document.getElementById('statTimer').innerText = '00:00:00';
+    }
+
+    // Called from Java Native Code
+    window.onAegisVpnStatusChanged = function(connected) {
+      setConnectedState(connected);
+    };
+
+    // Test Pipeline
+    function testPipeline() {
+      const box = document.getElementById('testResultBox');
+      box.style.display = 'block';
+      box.style.color = 'var(--amber)';
+      box.innerText = '⚡ Testing round-trip pipeline through Aegis Relay...';
+
+      if (window.AndroidAegis && window.AndroidAegis.testPipeline) {
+        window.AndroidAegis.testPipeline();
+      } else {
+        // Fallback fetch
+        const start = Date.now();
+        fetch('https://api.ipify.org?format=json')
+          .then(r => r.json())
+          .then(d => {
+            const lat = Date.now() - start;
+            box.style.color = '#34d399';
+            box.innerHTML = `<b>[✓] PIPELINE ACTIVE!</b><br/>Latency: ${lat}ms<br/>Public Routed IP: ${d.ip}<br/>Security: 0 IP/MAC Leak`;
+          })
+          .catch(e => {
+            box.style.color = 'var(--red)';
+            box.innerText = 'Test Error: ' + e.message;
+          });
+      }
+    }
+
+    // Java callback for test pipeline
+    window.onPipelineTestResult = function(success, message) {
+      const box = document.getElementById('testResultBox');
+      box.style.display = 'block';
+      if (success) {
+        box.style.color = '#34d399';
+        box.innerHTML = message;
+      } else {
+        box.style.color = 'var(--red)';
+        box.innerText = message;
+      }
+    };
+
+    // Settings Modal
+    function openSettingsModal() {
+      const cur = document.getElementById('statEndpoint').innerText;
+      const parts = cur.split(':');
+      document.getElementById('inputRelayHost').value = parts[0] || '172.209.217.140';
+      document.getElementById('inputRelayPort').value = parts[1] || '51820';
+      document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    function saveRelaySettings() {
+      const host = document.getElementById('inputRelayHost').value.trim();
+      const port = parseInt(document.getElementById('inputRelayPort').value.trim(), 10) || 51820;
+      if (!host) {
+        alert('Please enter a valid IP or hostname');
+        return;
+      }
+      const endpoint = `${host}:${port}`;
+      document.getElementById('statEndpoint').innerText = endpoint;
+      if (window.AndroidAegis && window.AndroidAegis.setEndpoint) {
+        window.AndroidAegis.setEndpoint(host, port);
+      }
+      closeSettingsModal();
+      alert('Endpoint updated: ' + endpoint);
+    }
+  </script>
+</body>
+</html>

@@ -103,7 +103,7 @@ export default function AdminConsole() {
     generateAdminGrantToken,
     providerNodes,
     toggleProviderNode,
-    generateHomeRouterShareUrl,
+    portalUrl,
     adminNotifications,
     markAdminNotificationRead,
     markAllAdminNotificationsRead,
@@ -133,7 +133,8 @@ export default function AdminConsole() {
   const handleOpenTravelQr = (node?: ProviderNode) => {
     const targetNode = node || providerNodes[0] || null
     setActiveTravelNode(targetNode)
-    const url = generateHomeRouterShareUrl(targetNode?.id || 'uplink-home')
+    const base = portalUrl || 'http://localhost:3888'
+    const url = `${base.replace(/\/$/, '')}/aegis.apk`
     QRCode.toDataURL(url, { color: { dark: '#030509', light: '#ffffff' }, margin: 2, width: 220 })
       .then(setTravelModalQrDataUrl)
       .catch(console.error)
@@ -142,7 +143,8 @@ export default function AdminConsole() {
   }
 
   const handleCopyTravelLink = () => {
-    const url = generateHomeRouterShareUrl(activeTravelNode?.id || 'uplink-home')
+    const base = portalUrl || 'http://localhost:3888'
+    const url = `${base.replace(/\/$/, '')}/aegis.apk`
     navigator.clipboard.writeText(url)
     setCopiedTravelLink(true)
     setTimeout(() => setCopiedTravelLink(false), 2000)
@@ -3606,18 +3608,18 @@ docker compose up -d`}
                 letterSpacing: '0.08em'
               }}
             >
-              ● Decentralized Router Mesh · Scan to Have App
+              ● Native Android APK · Scan to Install App
             </span>
             <h2 style={{ fontSize: 20, fontWeight: 800, marginTop: 4, marginBottom: 6 }}>
               {activeTravelNode?.name || 'Admin Home Wi-Fi Router'}
             </h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.4 }}>
-              Scan with any phone camera to open and have the Aegis App. Inside the app, tap <strong>Connect Free Tier (30m)</strong> or <strong>Connect Premium</strong> to trigger an encrypted tunnel back to your Home Wi-Fi router via Cloud P2P Mesh.
+              Scan with any smartphone camera to download and install <strong>AegisProtocol.apk</strong> directly. Inside the app, tap <strong>CONNECT TO ANONYMOUS INTERNET</strong> to engage the zero-leak device-wide tunnel back to your Home Wi-Fi router via Cloud P2P Mesh.
             </p>
 
             <div className="qr-box" style={{ margin: '0 auto 20px auto', display: 'inline-block' }}>
               {travelModalQrDataUrl ? (
-                <img src={travelModalQrDataUrl} alt="Remote Travel QR" width={200} height={200} style={{ borderRadius: 10 }} />
+                <img src={travelModalQrDataUrl} alt="Remote Travel APK QR" width={200} height={200} style={{ borderRadius: 10 }} />
               ) : (
                 <div style={{ width: 200, height: 200, background: '#111' }} />
               )}
@@ -3627,7 +3629,7 @@ docker compose up -d`}
               <input
                 type="text"
                 readOnly
-                value={generateHomeRouterShareUrl(activeTravelNode?.id || 'uplink-home')}
+                value={`${(portalUrl || 'http://localhost:3888').replace(/\/$/, '')}/aegis.apk`}
                 className="apple-input"
                 style={{ width: '100%', fontSize: 11, textAlign: 'center' }}
               />

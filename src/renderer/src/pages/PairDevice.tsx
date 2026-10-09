@@ -19,8 +19,7 @@ export default function PairDevice() {
     generateInvite,
     clearInvite,
     portalUrl,
-    addPeer,
-    generateHomeRouterShareUrl
+    addPeer
   } = useAegisStore()
 
   const [activeTab, setActiveTab] = useState<'share_app' | 'mesh_pair'>('share_app')
@@ -36,9 +35,10 @@ export default function PairDevice() {
     return () => clearInvite()
   }, [generateInvite, clearInvite])
 
-  // Generate QR code for Sharing the App & Mobile Portal (Scan to Have App)
+  // Generate QR code for Installing the Native Android App (Scan to Download APK)
   useEffect(() => {
-    const targetUrl = portalUrl || generateHomeRouterShareUrl()
+    const base = portalUrl || 'http://localhost:3888'
+    const targetUrl = `${base.replace(/\/$/, '')}/aegis.apk`
     if (targetUrl) {
       QRCode.toDataURL(targetUrl, {
         color: { dark: '#030509', light: '#ffffff' },
@@ -48,7 +48,7 @@ export default function PairDevice() {
         .then(setAppQrDataUrl)
         .catch(console.error)
     }
-  }, [portalUrl, generateHomeRouterShareUrl])
+  }, [portalUrl])
 
   // Generate QR code for Mesh Device Pairing
   useEffect(() => {
@@ -64,12 +64,11 @@ export default function PairDevice() {
   }, [inviteLink])
 
   const handleCopyApp = () => {
-    const targetUrl = portalUrl || generateHomeRouterShareUrl()
-    if (targetUrl) {
-      navigator.clipboard.writeText(targetUrl)
-      setCopiedApp(true)
-      setTimeout(() => setCopiedApp(false), 2000)
-    }
+    const base = portalUrl || 'http://localhost:3888'
+    const targetUrl = `${base.replace(/\/$/, '')}/aegis.apk`
+    navigator.clipboard.writeText(targetUrl)
+    setCopiedApp(true)
+    setTimeout(() => setCopiedApp(false), 2000)
   }
 
   const handleCopyMesh = () => {
@@ -161,18 +160,18 @@ export default function PairDevice() {
                 letterSpacing: '0.08em'
               }}
             >
-              Instant App Onboarding · Universal PWA
+              Native Android App · Self-Contained APK
             </span>
             <h2 style={{ fontSize: 20, fontWeight: 700, marginTop: 4, marginBottom: 8 }}>
-              Scan to Have the Aegis App
+              Scan to Install Aegis Android App
             </h2>
             <p style={{ fontSize: 12.5, color: 'var(--text-muted)', maxWidth: 360, margin: '0 auto 24px' }}>
-              Point any smartphone camera (iPhone or Android) to instantly open and have the Aegis App on mobile. No app store installation required.
+              Point any Android camera to instantly download and install AegisProtocol.apk. Built-in kernel-grade WireGuard Go tunnel (tun0) routing 100% of all apps.
             </p>
 
             <div className="qr-box">
               {appQrDataUrl ? (
-                <img src={appQrDataUrl} alt="Aegis App QR Code" width={200} height={200} />
+                <img src={appQrDataUrl} alt="Aegis App APK QR Code" width={200} height={200} />
               ) : (
                 <div style={{ width: 200, height: 200, background: '#eee' }} />
               )}
@@ -182,9 +181,9 @@ export default function PairDevice() {
               <input
                 type="text"
                 readOnly
-                value={portalUrl || generateHomeRouterShareUrl()}
+                value={`${(portalUrl || 'http://localhost:3888').replace(/\/$/, '')}/aegis.apk`}
                 className="apple-input"
-                style={{ width: 240, textAlign: 'center', fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}
+                style={{ width: 260, textAlign: 'center', fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}
               />
               <button onClick={handleCopyApp} className="btn btn-outline">
                 {copiedApp ? <Check size={14} style={{ color: 'var(--success)' }} /> : <Copy size={14} />}

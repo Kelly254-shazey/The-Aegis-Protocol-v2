@@ -1207,15 +1207,7 @@ echo "🎉 Router $ROUTER_NAME successfully joined the Aegis Unified Mesh Channe
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>The Aegis Protocol — Client Portal</title>
-  
-  <!-- Progressive Web App Capabilities -->
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-  <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Aegis Client" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
   <meta name="theme-color" content="#030712" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1307,73 +1299,33 @@ echo "🎉 Router $ROUTER_NAME successfully joined the Aegis Unified Mesh Channe
     </div>
 
     <!-- ======================================================== -->
-    <!-- SCREEN 1: APP INSTALLATION FLOW (TRIGGERED UPON QR SCAN) -->
+    <!-- NATIVE ANDROID APK INSTALLATION & QR CODE CARD           -->
     <!-- ======================================================== -->
-    <div id="installScreen" class="glass-card">
-      <div style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">
-        Install Aegis App to Access Portal
+    <div class="glass-card" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.16), rgba(16, 185, 129, 0.12)); border: 1px solid rgba(6, 182, 212, 0.45); text-align: center; padding: 24px 20px; margin-bottom: 22px;">
+      <div style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: 0.02em;">
+        📱 The Aegis Protocol — Native Android App
       </div>
-      <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px;">
-        Scan verified. Install the Aegis App on your device for high-speed anonymous internet, real-time quota telemetry, and 1-tap client portal access.
-      </p>
+      <div style="font-size: 12.5px; color: var(--text-muted); max-width: 480px; margin: 0 auto 18px; line-height: 1.5;">
+        Direct 1-click device-wide VPN. Built-in kernel-grade WireGuard engine (tun0). Routes 100% of all apps (Chrome, YouTube, WhatsApp) through the Azure & Laptop Broadband Mesh. No third-party apps required.
+      </div>
 
-      <div class="feature-row">
-        <div class="feature-icon">⚡</div>
-        <div>
-          <div style="font-weight: 600;">1-Tap Home Screen Launcher</div>
-          <div style="color: var(--text-muted); font-size: 11.5px;">Direct app icon on your phone without app store logins</div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 14px;">
+        <div style="background: #fff; padding: 10px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); display: inline-block;">
+          <img id="apkDownloadQr" style="width: 160px; height: 160px; display: block;" alt="Scan to Install Aegis APK" />
         </div>
-      </div>
-
-      <div class="feature-row">
-        <div class="feature-icon">🛡️</div>
-        <div>
-          <div style="font-weight: 600;">Zero-Leak Noise Protocol Tunnel</div>
-          <div style="color: var(--text-muted); font-size: 11.5px;">Real IP & MAC addresses are fully stripped and cloaked</div>
+        <div style="font-size: 12px; font-weight: 700; color: var(--cyan); display: flex; align-items: center; gap: 6px;">
+          <span>📷</span> Scan with any phone camera to install directly
         </div>
+        <a href="/aegis.apk" class="btn-primary" style="text-decoration: none; width: 100%; max-width: 320px; padding: 14px 22px; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 22px rgba(6, 182, 212, 0.4); border-radius: 12px;">
+          <span>⬇️ Download AegisProtocol.apk (4.5 MB)</span>
+        </a>
       </div>
-
-      <div class="feature-row">
-        <div class="feature-icon">📊</div>
-        <div>
-          <div style="font-weight: 600;">Real-Time Quota & Speed Cockpit</div>
-          <div style="color: var(--text-muted); font-size: 11.5px;">Manage passes, ping latency, and session countdowns live</div>
-        </div>
-      </div>
-
-      <button id="btnInstallApp" class="btn-primary" onclick="triggerAppInstall()">
-        <span>⚡ Install Aegis App on This Phone</span>
-      </button>
-
-      <!-- Android Specific Instructions -->
-      <div id="androidInstallGuide" class="ios-box" style="display: block; background: rgba(6, 182, 212, 0.12); border-color: rgba(6, 182, 212, 0.35);">
-        <div style="font-weight: 700; margin-bottom: 6px; color: var(--cyan); display: flex; align-items: center; gap: 6px;">
-          <span>🤖 Android 2-Step Install:</span>
-        </div>
-        1. Tap the <b>3 dots menu (⋮)</b> in the top right of Chrome.<br />
-        2. Tap <b>"Install app"</b> (or <b>"Add to Home screen"</b>).<br />
-        3. Tap <b>"Install"</b> — The Aegis App icon will appear on your phone!
-      </div>
-
-      <!-- iOS Safari Specific Instructions -->
-      <div id="iosInstallGuide" class="ios-box" style="display: none; background: rgba(37, 99, 235, 0.12); border-color: rgba(37, 99, 235, 0.35);">
-        <div style="font-weight: 700; margin-bottom: 6px; color: #60a5fa; display: flex; align-items: center; gap: 6px;">
-          <span>📱 iPhone Safari 2-Step Install:</span>
-        </div>
-        1. Tap the <b>Share button ([↑])</b> in the bottom Safari toolbar.<br />
-        2. Scroll down and tap <b>"Add to Home Screen"</b>.<br />
-        3. Tap <b>"Add"</b> at the top right — The Aegis App is now on your screen!
-      </div>
-
-      <button class="btn-outline" onclick="openWebPortalDirectly()">
-        Open Web Portal in Browser (Without Installing) →
-      </button>
     </div>
 
     <!-- ======================================================== -->
-    <!-- SCREEN 2: FULL CLIENT PORTAL COCKPIT                     -->
+    <!-- FULL CLIENT PORTAL & BROADBAND MESH COCKPIT              -->
     <!-- ======================================================== -->
-    <div id="portalScreen" style="display: none;">
+    <div id="portalScreen" style="display: block;">
       
       <!-- Live Telemetry Card -->
       <div class="glass-card" style="padding: 16px 20px;">
@@ -1434,23 +1386,6 @@ echo "🎉 Router $ROUTER_NAME successfully joined the Aegis Unified Mesh Channe
         </div>
       </div>
 
-      <!-- Native Android App Download Card -->
-      <div class="glass-card" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(16, 185, 129, 0.08)); border-color: rgba(6, 182, 212, 0.4); margin-bottom: 16px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-          <div style="flex: 1; min-width: 200px;">
-            <div style="font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
-              <span>📱</span> Aegis Native Android App (1-Click VPN)
-            </div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
-              Direct tun0 virtual adapter routing 100% of phone apps through Cloud & Laptop broadband mesh. Zero external apps needed.
-            </div>
-          </div>
-          <a href="/aegis.apk" class="btn-primary" style="width: auto; padding: 10px 18px; font-size: 12px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.35);">
-            ⬇️ Download APK (4.5 MB)
-          </a>
-        </div>
-      </div>
-
       <!-- Passes & Connection Launcher -->
       <div id="packagesCard" class="glass-card">
         <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">
@@ -1505,87 +1440,26 @@ echo "🎉 Router $ROUTER_NAME successfully joined the Aegis Unified Mesh Channe
   </div>
 
   <script>
-    // 1. Register Service Worker for PWA
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(console.error);
-    }
-
-    let deferredPrompt = null;
     let selectedTierId = 'free';
     let selectedDuration = 30;
     let localPackages = ${JSON.stringify(activePackages)};
     let sessionTimerInterval = null;
 
-    // Check if running as Installed App (Standalone Mode)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                         window.navigator.standalone === true ||
-                         new URLSearchParams(window.location.search).get('app') === 'installed' ||
-                         sessionStorage.getItem('aegis_portal_mode') === 'true';
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      const btn = document.getElementById('btnInstallApp');
-      if (btn) btn.innerHTML = '<span>⚡ Install Aegis App (1-Tap)</span>';
-    });
-
-    window.addEventListener('appinstalled', () => {
-      deferredPrompt = null;
-      sessionStorage.setItem('aegis_portal_mode', 'true');
-      showPortalCockpit();
-    });
-
-    // Platform detection for phone install guides
-    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
-    if (isIOS) {
-      const iosGuide = document.getElementById('iosInstallGuide');
-      const androidGuide = document.getElementById('androidInstallGuide');
-      if (iosGuide && !isStandalone) iosGuide.style.display = 'block';
-      if (androidGuide) androidGuide.style.display = 'none';
+    // Set QR Codes to Download Native Android APK
+    const apkUrl = window.location.origin + '/aegis.apk';
+    const apkQr = document.getElementById('apkDownloadQr');
+    if (apkQr) {
+      apkQr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(apkUrl);
+    }
+    const shareQr = document.getElementById('shareQrImg');
+    if (shareQr) {
+      shareQr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=' + encodeURIComponent(apkUrl);
     }
 
-    // Initialize View (Only show cockpit if actually launched as installed standalone app)
-    if (isStandalone) {
-      showPortalCockpit();
-    }
-
-    function showPortalCockpit() {
-      document.getElementById('installScreen').style.display = 'none';
-      document.getElementById('portalScreen').style.display = 'block';
-      const badge = document.getElementById('modeBadge');
-      badge.className = 'badge badge-green';
-      badge.innerText = isStandalone ? '● STANDALONE APP ACTIVE' : '● CLIENT PORTAL ACTIVE';
-      
-      initTelemetry();
-      renderPackages(localPackages);
-      restoreExistingSession();
-
-      const qr = document.getElementById('shareQrImg');
-      if (qr) qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=' + encodeURIComponent(window.location.origin);
-    }
-
-    async function triggerAppInstall() {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          sessionStorage.setItem('aegis_portal_mode', 'true');
-          showPortalCockpit();
-        }
-      } else {
-        const guide = isIOS ? document.getElementById('iosInstallGuide') : document.getElementById('androidInstallGuide');
-        if (guide) {
-          guide.style.boxShadow = '0 0 25px rgba(6, 182, 212, 0.6)';
-          guide.style.borderColor = '#06b6d4';
-          guide.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
-    }
-
-    function openWebPortalDirectly() {
-      sessionStorage.setItem('aegis_portal_mode', 'true');
-      showPortalCockpit();
-    }
+    // Direct Cockpit Initialization
+    initTelemetry();
+    renderPackages(localPackages);
+    restoreExistingSession();
 
     // Telemetry Diagnostics
     async function initTelemetry() {

@@ -7,11 +7,14 @@
 const http = require('http')
 const https = require('https')
 
-const CLOUD_URL = process.env.CLOUD_URL || 'http://172.209.217.140:3888'
+const CLOUD_URL = process.env.CLOUD_URL || 'https://172-209-217-140.sslip.io'
 const PROVIDER_ID = 'provider-laptop-master'
 const PROVIDER_NAME = 'Master Laptop Ingress Gateway'
 const LOCATION = 'Residential Broadband Ingress'
 const BANDWIDTH_MBPS = 100
+
+// Allow HTTPS self-signed / sslip.io certificates
+const httpsAgent = new https.Agent({ rejectUnauthorized: false })
 
 console.log('==================================================================')
 console.log('🛡️  THE AEGIS PROTOCOL — INGRESS PROVIDER NODE INITIALIZING')
@@ -22,6 +25,10 @@ console.log('=================================================================='
 
 function getClient(urlStr) {
   return urlStr.startsWith('https:') ? https : http
+}
+
+function getAgent(urlStr) {
+  return urlStr.startsWith('https:') ? httpsAgent : undefined
 }
 
 function registerProvider() {
@@ -42,6 +49,7 @@ function registerProvider() {
       port: url.port || (url.protocol === 'https:' ? 443 : 80),
       path: url.pathname,
       method: 'POST',
+      agent: getAgent(url.protocol),
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(payload)
@@ -95,6 +103,7 @@ function pollChannelTask() {
       hostname: url.hostname,
       port: url.port || (url.protocol === 'https:' ? 443 : 80),
       path: url.pathname,
+      agent: getAgent(url.protocol),
       timeout: 30000
     },
     (res) => {
@@ -156,6 +165,7 @@ function sendResolution(taskId, data, latencyMs) {
       port: url.port || (url.protocol === 'https:' ? 443 : 80),
       path: url.pathname,
       method: 'POST',
+      agent: getAgent(url.protocol),
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(payload)
@@ -177,10 +187,19 @@ setInterval(() => {
   const url = new URL(CLOUD_URL + '/api/ping')
   const client = getClient(url.protocol)
   client
-    .get({ hostname: url.hostname, port: url.port || 80, path: url.pathname, timeout: 5000 }, (res) => {
-      const lat = Date.now() - start
-      console.log(`[♥] Channel Heartbeat: OK (${lat}ms latency to Azure South Africa Relay)`)
-    })
+    .get(
+      {
+        hostname: url.hostname,
+        port: url.port || (url.protocol === 'https:' ? 443 : 80),
+        path: url.pathname,
+        agent: getAgent(url.protocol),
+        timeout: 5000
+      },
+      (res) => {
+        const lat = Date.now() - start
+        console.log(`[♥] Channel Heartbeat: OK (${lat}ms latency to Azure South Africa Relay)`)
+      }
+    )
     .on('error', (err) => {
       console.warn(`[!] Heartbeat failed:`, err.message)
     })
