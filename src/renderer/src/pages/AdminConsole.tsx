@@ -65,7 +65,6 @@ export default function AdminConsole() {
     zeroToleranceMode,
     toggleZeroToleranceMode,
     unbanThreat,
-    simulateAttackVector,
     blockThreat,
     clearThreats,
     cloudRoutes,
@@ -974,51 +973,6 @@ export default function AdminConsole() {
             ))}
           </div>
 
-          {/* Test Vector Verification Harness */}
-          <div
-            style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '12px 14px',
-              marginBottom: 20
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <ShieldAlert size={14} style={{ color: 'var(--danger)' }} />
-                Simulate Attack Vectors to Verify Immediate Flag-Off
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                Test any channel; node will be severed and quarantined in 0ms
-              </span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {[
-                { label: 'Test Portal SYN Flood', vector: 'syn_flood' as const },
-                { label: 'Test SQLi / XSS Attack', vector: 'tampering' as const },
-                { label: 'Test Noise Rogue Probe', vector: 'rogue_probe' as const },
-                { label: 'Test Mesh ARP Spoof', vector: 'arp_spoof' as const },
-                { label: 'Test Quota Bypass', vector: 'quota_bypass' as const },
-                { label: 'Test DNS Hijack Intercept', vector: 'mitm_intercept' as const }
-              ].map((btn, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => simulateAttackVector(btn.vector)}
-                  className="btn btn-outline btn-sm"
-                  style={{
-                    fontSize: 11,
-                    padding: '4px 10px',
-                    borderColor: 'rgba(235, 75, 75, 0.35)',
-                    color: '#ff9999'
-                  }}
-                >
-                  <Zap size={11} style={{ color: '#ff4d4d' }} />
-                  {btn.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Quarantine Vault Table */}
           <div className="notion-table-wrapper">
@@ -2022,73 +1976,83 @@ export default function AdminConsole() {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-              {providerNodes.map((node) => (
-                <div
-                  key={node.id}
-                  style={{
-                    background: 'rgba(0, 0, 0, 0.35)',
-                    border: node.isHomeRouter ? '1px solid rgba(52, 199, 89, 0.4)' : '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: 14,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between'
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 13 }}>
-                        {node.isHomeRouter ? (
-                          <Home size={14} style={{ color: 'var(--success)' }} />
-                        ) : node.type === 'dedicated_server' ? (
-                          <Server size={14} style={{ color: 'var(--gold-bright)' }} />
-                        ) : (
-                          <Router size={14} style={{ color: 'var(--blue-bright)' }} />
-                        )}
-                        <span>{node.name}</span>
-                      </div>
-                      <span className={`status-pill ${node.status === 'online' ? 'online' : 'standby'}`} style={{ fontSize: 9 }}>
-                        {node.status.toUpperCase()}
-                      </span>
-                    </div>
-
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
-                      {node.locationLabel}
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, padding: '8px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6, fontSize: 11, marginBottom: 12 }}>
-                      <div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: 9.5 }}>Upstream Feed</div>
-                        <div style={{ fontWeight: 700, color: 'var(--success)' }}>{node.upstreamBandwidthMbps} Mbps</div>
-                      </div>
-                      <div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: 9.5 }}>Remote Consumers</div>
-                        <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{node.connectedConsumersCount} active</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button
-                      onClick={() => handleOpenTravelQr(node)}
-                      className="btn btn-outline btn-sm"
-                      style={{ flex: 1, fontSize: 11, padding: '4px 8px', justifyContent: 'center' }}
-                    >
-                      <QrCode size={11} />
-                      <span>Remote QR</span>
-                    </button>
-                    <button
-                      onClick={() => toggleProviderNode(node.id)}
-                      className="btn btn-secondary btn-sm"
-                      style={{ fontSize: 11, padding: '4px 8px' }}
-                    >
-                      {node.status === 'online' ? 'Pause' : 'Resume'}
-                    </button>
-                  </div>
+            {providerNodes.length === 0 ? (
+              <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--border-subtle)' }}>
+                <Home size={28} style={{ color: 'var(--text-muted)', margin: '0 auto 8px', display: 'block', opacity: 0.5 }} />
+                <div style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>No Ingress Provider Nodes Registered</div>
+                <div style={{ fontSize: 11.5, marginTop: 4 }}>
+                  Enroll your home router or server uplink above to supply broadband bandwidth UP into the cloud mesh.
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
+                {providerNodes.map((node) => (
+                  <div
+                    key={node.id}
+                    style={{
+                      background: 'rgba(0, 0, 0, 0.35)',
+                      border: node.isHomeRouter ? '1px solid rgba(52, 199, 89, 0.4)' : '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 14,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 13 }}>
+                          {node.isHomeRouter ? (
+                            <Home size={14} style={{ color: 'var(--success)' }} />
+                          ) : node.type === 'dedicated_server' ? (
+                            <Server size={14} style={{ color: 'var(--gold-bright)' }} />
+                          ) : (
+                            <Router size={14} style={{ color: 'var(--blue-bright)' }} />
+                          )}
+                          <span>{node.name}</span>
+                        </div>
+                        <span className={`status-pill ${node.status === 'online' ? 'online' : 'standby'}`} style={{ fontSize: 9 }}>
+                          {node.status.toUpperCase()}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+                        {node.locationLabel}
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, padding: '8px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6, fontSize: 11, marginBottom: 12 }}>
+                        <div>
+                          <div style={{ color: 'var(--text-muted)', fontSize: 9.5 }}>Upstream Feed</div>
+                          <div style={{ fontWeight: 700, color: 'var(--success)' }}>{node.upstreamBandwidthMbps} Mbps</div>
+                        </div>
+                        <div>
+                          <div style={{ color: 'var(--text-muted)', fontSize: 9.5 }}>Remote Consumers</div>
+                          <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{node.connectedConsumersCount} active</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        onClick={() => handleOpenTravelQr(node)}
+                        className="btn btn-outline btn-sm"
+                        style={{ flex: 1, fontSize: 11, padding: '4px 8px', justifyContent: 'center' }}
+                      >
+                        <QrCode size={11} />
+                        <span>Remote QR</span>
+                      </button>
+                      <button
+                        onClick={() => toggleProviderNode(node.id)}
+                        className="btn btn-secondary btn-sm"
+                        style={{ fontSize: 11, padding: '4px 8px' }}
+                      >
+                        {node.status === 'online' ? 'Pause' : 'Resume'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Provision New Wi-Fi Router Form */}
@@ -2196,97 +2160,107 @@ export default function AdminConsole() {
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16 }}>
-              {routers.map((router) => {
-                const boundRoute = cloudRoutes.find((r) => r.id === router.cloudRouteId) || cloudRoutes[0]
-                return (
-                  <div key={router.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{router.name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{router.model} · {router.firmware}</div>
+            {routers.length === 0 ? (
+              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--border-subtle)' }}>
+                <Wifi size={28} style={{ color: 'var(--text-muted)', margin: '0 auto 8px', display: 'block', opacity: 0.5 }} />
+                <div style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>No Physical Wi-Fi Routers Enrolled</div>
+                <div style={{ fontSize: 11.5, marginTop: 4 }}>
+                  Click &quot;Provision New Router&quot; above to generate WireGuard configs for OpenWrt or hardware APs.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16 }}>
+                {routers.map((router) => {
+                  const boundRoute = cloudRoutes.find((r) => r.id === router.cloudRouteId) || cloudRoutes[0]
+                  return (
+                    <div key={router.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{router.name}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{router.model} · {router.firmware}</div>
+                        </div>
+                        <span
+                          className={`status-pill ${router.status === 'online' ? 'online' : router.status === 'rebooting' ? 'warn' : 'offline'}`}
+                          style={{ fontSize: 10, textTransform: 'uppercase' }}
+                        >
+                          ● {router.status === 'rebooting' ? 'Rebooting...' : router.status}
+                        </span>
                       </div>
-                      <span
-                        className={`status-pill ${router.status === 'online' ? 'online' : router.status === 'rebooting' ? 'warn' : 'offline'}`}
-                        style={{ fontSize: 10, textTransform: 'uppercase' }}
-                      >
-                        ● {router.status === 'rebooting' ? 'Rebooting...' : router.status}
-                      </span>
-                    </div>
 
-                    {/* Radio & Tunnel details with explicit IP & MAC hiding verification */}
-                    <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 11 }}>
-                      <div>
-                        <span style={{ color: 'var(--text-muted)' }}>Wi-Fi SSID: </span>
-                        <strong style={{ color: 'var(--text-primary)' }}>{router.ssid}</strong>
+                      {/* Radio & Tunnel details with explicit IP & MAC hiding verification */}
+                      <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 11 }}>
+                        <div>
+                          <span style={{ color: 'var(--text-muted)' }}>Wi-Fi SSID: </span>
+                          <strong style={{ color: 'var(--text-primary)' }}>{router.ssid}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-muted)' }}>LAN Subnet: </span>
+                          <strong style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-primary)' }}>{router.lanSubnet}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-muted)' }}>Cloud Ingress IP: </span>
+                          <strong style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--success)' }}>
+                            {router.routerBlindedIp || '100.64.12.1 [Router-Cloaked]'}
+                          </strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-muted)' }}>Hardware MAC: </span>
+                          <strong style={{ color: 'var(--teal)' }}>[100% Scrubbed / Hidden]</strong>
+                        </div>
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>Cloud Relay: </span>
+                          <strong style={{ color: 'var(--teal)' }}>→ {boundRoute?.name || 'Primary Cloud Egress'} ({boundRoute?.region})</strong>
+                        </div>
                       </div>
-                      <div>
-                        <span style={{ color: 'var(--text-muted)' }}>LAN Subnet: </span>
-                        <strong style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-primary)' }}>{router.lanSubnet}</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-muted)' }}>Cloud Ingress IP: </span>
-                        <strong style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--success)' }}>
-                          {router.routerBlindedIp || '100.64.12.1 [Router-Cloaked]'}
-                        </strong>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-muted)' }}>Hardware MAC: </span>
-                        <strong style={{ color: 'var(--teal)' }}>[100% Scrubbed / Hidden]</strong>
-                      </div>
-                      <div style={{ gridColumn: 'span 2' }}>
-                        <span style={{ color: 'var(--text-muted)' }}>Cloud Relay: </span>
-                        <strong style={{ color: 'var(--teal)' }}>→ {boundRoute?.name || 'Primary Cloud Egress'} ({boundRoute?.region})</strong>
-                      </div>
-                    </div>
 
-                    {/* Live Telemetry Bars */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                      <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '6px 8px', borderRadius: 4 }}>
-                        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Connected Clients</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold-bright)' }}>{router.connectedClientsCount} Clients</div>
+                      {/* Live Telemetry Bars */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                        <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '6px 8px', borderRadius: 4 }}>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Connected Clients</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold-bright)' }}>{router.connectedClientsCount} Clients</div>
+                        </div>
+                        <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '6px 8px', borderRadius: 4 }}>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Throughput</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-bright)' }}>{(router.downloadKbps / 1000).toFixed(0)}M Down</div>
+                        </div>
+                        <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '6px 8px', borderRadius: 4 }}>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>CPU / RAM</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--success)' }}>{router.cpuUsagePercent}% / {router.ramUsagePercent}%</div>
+                        </div>
                       </div>
-                      <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '6px 8px', borderRadius: 4 }}>
-                        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Throughput</div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-bright)' }}>{(router.downloadKbps / 1000).toFixed(0)}M Down</div>
-                      </div>
-                      <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '6px 8px', borderRadius: 4 }}>
-                        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>CPU / RAM</div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--success)' }}>{router.cpuUsagePercent}% / {router.ramUsagePercent}%</div>
-                      </div>
-                    </div>
 
-                    {/* Action Buttons */}
-                    <div style={{ display: 'flex', gap: 8, paddingTop: 6, borderTop: '1px solid var(--border-subtle)' }}>
-                      <button
-                        onClick={() => handleOpenRouterConfig(router)}
-                        className="btn btn-secondary btn-sm"
-                        style={{ flex: 1, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
-                      >
-                        <FileText size={12} />
-                        <span>OpenWrt Config</span>
-                      </button>
-                      <button
-                        onClick={() => rebootRouter(router.id)}
-                        disabled={router.status === 'rebooting'}
-                        className="btn btn-outline btn-sm"
-                        style={{ fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
-                      >
-                        <RefreshCw size={12} className={router.status === 'rebooting' ? 'spin' : ''} />
-                        <span>Reboot</span>
-                      </button>
-                      <button
-                        onClick={() => removeRouter(router.id)}
-                        className="btn btn-outline btn-sm"
-                        style={{ fontSize: 11, color: 'var(--danger)', borderColor: 'rgba(255, 69, 58, 0.3)' }}
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                      {/* Action Buttons */}
+                      <div style={{ display: 'flex', gap: 8, paddingTop: 6, borderTop: '1px solid var(--border-subtle)' }}>
+                        <button
+                          onClick={() => handleOpenRouterConfig(router)}
+                          className="btn btn-secondary btn-sm"
+                          style={{ flex: 1, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                        >
+                          <FileText size={12} />
+                          <span>OpenWrt Config</span>
+                        </button>
+                        <button
+                          onClick={() => rebootRouter(router.id)}
+                          disabled={router.status === 'rebooting'}
+                          className="btn btn-outline btn-sm"
+                          style={{ fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                        >
+                          <RefreshCw size={12} className={router.status === 'rebooting' ? 'spin' : ''} />
+                          <span>Reboot</span>
+                        </button>
+                        <button
+                          onClick={() => removeRouter(router.id)}
+                          className="btn btn-outline btn-sm"
+                          style={{ fontSize: 11, color: 'var(--danger)', borderColor: 'rgba(255, 69, 58, 0.3)' }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* OpenWrt Config Drawer / Modal */}
@@ -2703,23 +2677,33 @@ export default function AdminConsole() {
             </div>
           </div>
 
-          <div className="stat-grid" style={{ marginBottom: 20 }}>
-            {loadDistribution.map((point) => (
-              <div key={point.routeId} className="stat-card">
-                <div className="stat-card-label">{point.name}</div>
-                <div className="stat-card-value">{point.percentage}%</div>
-                <div className="stat-card-sub" style={{ marginTop: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span>Active Flows: {point.activeStreams}</span>
-                    <span>{point.throughputMbps} Mbps</span>
-                  </div>
-                  <div className="progress-bar-bg">
-                    <div className="progress-bar-fill" style={{ width: `${point.percentage}%` }} />
+          {loadDistribution.length === 0 ? (
+            <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--border-subtle)', marginBottom: 20 }}>
+              <Layers size={24} style={{ color: 'var(--text-muted)', margin: '0 auto 8px', display: 'block', opacity: 0.5 }} />
+              <div style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>No Active Egress Traffic Streams</div>
+              <div style={{ fontSize: 11.5, marginTop: 4 }}>
+                Active load balancing metrics will populate in real-time as subscriber clients and routers route egress flows.
+              </div>
+            </div>
+          ) : (
+            <div className="stat-grid" style={{ marginBottom: 20 }}>
+              {loadDistribution.map((point) => (
+                <div key={point.routeId} className="stat-card">
+                  <div className="stat-card-label">{point.name}</div>
+                  <div className="stat-card-value">{point.percentage}%</div>
+                  <div className="stat-card-sub" style={{ marginTop: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span>Active Flows: {point.activeStreams}</span>
+                      <span>{point.throughputMbps} Mbps</span>
+                    </div>
+                    <div className="progress-bar-bg">
+                      <div className="progress-bar-fill" style={{ width: `${point.percentage}%` }} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           <div className="glass-card">
             <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>
@@ -3127,7 +3111,7 @@ export default function AdminConsole() {
                   This interactive alert will immediately appear at the top of every mobile & desktop client display:
                 </p>
 
-                {/* Simulated Floating Update Banner */}
+                {/* Live Client Floating Update Banner Preview */}
                 <div
                   style={{
                     background: 'rgba(15, 23, 42, 0.95)',

@@ -349,11 +349,11 @@ function startEmbeddedPortalServer(desiredPort = 3888) {
             status: 'online',
             hasInternet: false,
             isProvider: false,
-            uploadKbps: 68400,
-            downloadKbps: 185600,
-            latency: 8,
+            uploadKbps: 0,
+            downloadKbps: 0,
+            latency: 0,
             packetLoss: 0,
-            jitter: 1,
+            jitter: 0,
             dataUsed: 0,
             connectedSince: Date.now(),
             tier: data.tier || 'free',
@@ -758,31 +758,9 @@ app.whenReady().then(() => {
     return true
   })
 
-  // Admin IPC: simulate zero-tolerance threat vector to test immediate flag-off
-  ipcMain.handle('admin:simulate-attack', (_, vector: string) => {
-    const fakeIp = `192.168.1.${Math.floor(Math.random() * 200 + 50)}`
-    const channelMap: Record<string, ThreatPayload['channel']> = {
-      syn_flood: 'HTTP / Hotspot Gateway',
-      tampering: 'HTTP / Hotspot Gateway',
-      rogue_probe: 'P2P Noise Handshake',
-      arp_spoof: 'Mesh Wire / Packet',
-      quota_bypass: 'Mesh Wire / Packet',
-      mitm_intercept: 'Cloud Egress / DNS'
-    }
-    const descriptions: Record<string, string> = {
-      syn_flood: 'High-frequency SYN flood and connection starvation attempt. Flagged off in 0ms.',
-      tampering: 'Malicious payload injection and buffer overflow attempt on hotspot portal. Flagged off in 0ms.',
-      rogue_probe: 'Unauthorized port probe and ephemeral key tampering caught during Noise_XX handshake. Flagged off in 0ms.',
-      arp_spoof: 'Rogue node attempting ARP cache poisoning and MAC address spoofing on mesh wire. Flagged off in 0ms.',
-      quota_bypass: 'Forged data accounting frame detected; node attempted unmetered quota bypass. Flagged off in 0ms.',
-      mitm_intercept: 'Unencrypted DNS hijack probe intercepted on port 53. DoH leak shield engaged. Flagged off in 0ms.'
-    }
-    const type = (vector in channelMap ? vector : 'mitm_intercept') as ThreatPayload['type']
-    const channel = channelMap[type] || 'Mesh Wire / Packet'
-    const desc = descriptions[type] || 'Hostile probe intercepted and killed.'
-
-    flagOffImmediately(fakeIp, type, channel, desc)
-    return true
+  // Admin IPC: simulate zero-tolerance threat vector (disabled in production)
+  ipcMain.handle('admin:simulate-attack', () => {
+    return false
   })
 
   // --- App Version & OTA Update Release Management ---

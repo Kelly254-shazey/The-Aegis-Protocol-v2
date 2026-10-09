@@ -54,48 +54,8 @@ let activePackages = [
 ]
 
 // --- P2P Mesh Ingress Providers (Routers & Servers supplying internet UP to Cloud) ---
-// All real router IPs and hardware MAC addresses are cryptographically scrubbed and blinded
-let providerUplinks = [
-  {
-    id: 'uplink-home',
-    name: "Admin Home Wi-Fi Router",
-    type: 'home_router',
-    location: 'Home Base (1 Gbps Fiber)',
-    bandwidthMbps: 350,
-    status: 'online',
-    isHomeRouter: true,
-    blindedIp: '100.64.12.1 [Home Router Cloaked]',
-    macAddressScrubbed: true,
-    realIpHidden: true,
-    antiMitmShield: 'Noise_XX_25519 (0 IP/MAC Leak)'
-  },
-  {
-    id: 'uplink-office',
-    name: 'Field / Office Mesh Node',
-    type: 'field_router',
-    location: 'Regional Office AP',
-    bandwidthMbps: 150,
-    status: 'online',
-    isHomeRouter: false,
-    blindedIp: '100.64.24.8 [Office Router Cloaked]',
-    macAddressScrubbed: true,
-    realIpHidden: true,
-    antiMitmShield: 'Noise_XX_25519 (0 IP/MAC Leak)'
-  },
-  {
-    id: 'uplink-server',
-    name: 'High-Capacity Dedicated Server Core',
-    type: 'dedicated_server',
-    location: '10 Gbps Datacenter Egress Node',
-    bandwidthMbps: 1000,
-    status: 'online',
-    isHomeRouter: false,
-    blindedIp: '100.64.99.1 [Datacenter Cloaked]',
-    macAddressScrubbed: true,
-    realIpHidden: true,
-    antiMitmShield: 'Noise_XX_25519 (0 IP/MAC Leak)'
-  }
-]
+// Populated dynamically via /api/provider/register endpoint
+let providerUplinks = []
 
 // --- Threat & Intrusion Protection Engine ---
 const quarantinedIps = new Set()

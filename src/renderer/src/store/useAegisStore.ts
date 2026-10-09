@@ -336,7 +336,6 @@ interface AegisState {
     severity?: ThreatEvent['severity']
   }) => void
   unbanThreat: (id: string) => Promise<void>
-  simulateAttackVector: (vector: ThreatEvent['type']) => Promise<void>
   blockThreat: (id: string) => void
   mitigateThreat: (id: string) => void
   clearThreats: () => void
@@ -471,157 +470,43 @@ export const STANDARD_PACKAGES: AccessPackage[] = [
   }
 ]
 
-// Initial Cloud Egress Routes with Blinded/Cloaked Endpoints
-const INITIAL_CLOUD_ROUTES: CloudRoute[] = [
+// Initial Cloud Egress Route (Binds to Cloud VPS)
+export const INITIAL_CLOUD_ROUTES: CloudRoute[] = [
   {
     id: 'cloud-01',
-    name: 'Cloudflare WARP Egress (Frankfurt)',
-    provider: 'Cloudflare',
-    region: 'EU-Central',
-    endpoint: 'cf-warp.onion-egress.aegis:2408 [Cloaked]',
-    latencyMs: 14,
+    name: 'Primary VPS WireGuard Relay',
+    provider: 'WireGuard',
+    region: 'Cloud Relay Gateway',
+    endpoint: '198.51.100.42:51820',
+    latencyMs: 0,
     packetLoss: 0,
     isPrimary: true,
-    status: 'online',
-    encrypted: true
-  },
-  {
-    id: 'cloud-02',
-    name: 'AWS WireGuard Gateway (us-east-1)',
-    provider: 'AWS',
-    region: 'US-East',
-    endpoint: 'aws-tunnel.onion-egress.aegis:51820 [Cloaked]',
-    latencyMs: 68,
-    packetLoss: 0,
-    isPrimary: false,
-    status: 'online',
-    encrypted: true
-  },
-  {
-    id: 'cloud-03',
-    name: 'DigitalOcean Exit Node (Amsterdam)',
-    provider: 'Custom',
-    region: 'EU-West',
-    endpoint: 'do-exit.onion-egress.aegis:51820 [Cloaked]',
-    latencyMs: 24,
-    packetLoss: 0,
-    isPrimary: false,
     status: 'standby',
     encrypted: true
   }
 ]
 
-// Initial Managed Wi-Fi Routers (Provisioned by Admin)
-export const INITIAL_ROUTERS: RouterDevice[] = [
-  {
-    id: 'rt-01',
-    name: 'Primary Gateway AP - GL.iNet Flint 2',
-    model: 'OpenWrt 23.05 (MT7986 / Wi-Fi 6 160MHz)',
-    lanSubnet: '192.168.8.1/24',
-    ssid: 'Aegis-Ultra-Mesh-5G',
-    channel: 'Ch 36 (160 MHz)',
-    connectedClientsCount: 14,
-    cloudRouteId: 'cloud-01',
-    status: 'online',
-    cpuUsagePercent: 14,
-    ramUsagePercent: 31,
-    uptimeHours: 168,
-    uploadKbps: 68400,
-    downloadKbps: 185600,
-    packetLoss: 0,
-    wireguardEndpointBlinded: 'cf-warp.onion-egress.aegis:2408 [Cloaked]',
-    wireguardPublicKeyBlinded: 'wg-pub-••••••••••••••••9e33',
-    firmware: 'Aegis-OpenWrt-v2.5',
-    macAddressScrubbed: true,
-    routerBlindedIp: '100.64.12.1 [Home Router Cloaked]',
-    realIpHidden: true
-  },
-  {
-    id: 'rt-02',
-    name: 'Field Pop-Up AP - GL.iNet Beryl AX',
-    model: 'OpenWrt 22.03 (MT7981 / Wi-Fi 6 Portable)',
-    lanSubnet: '192.168.10.1/24',
-    ssid: 'Aegis-Field-Portable-5G',
-    channel: 'Ch 149 (80 MHz)',
-    connectedClientsCount: 6,
-    cloudRouteId: 'cloud-02',
-    status: 'online',
-    cpuUsagePercent: 8,
-    ramUsagePercent: 22,
-    uptimeHours: 42,
-    uploadKbps: 45000,
-    downloadKbps: 120000,
-    packetLoss: 0,
-    wireguardEndpointBlinded: 'aws-tunnel.onion-egress.aegis:51820 [Cloaked]',
-    wireguardPublicKeyBlinded: 'wg-pub-••••••••••••••••4b82',
-    firmware: 'Aegis-OpenWrt-v2.5',
-    macAddressScrubbed: true,
-    routerBlindedIp: '100.64.24.8 [Office Router Cloaked]',
-    realIpHidden: true
-  }
-]
+// Managed Wi-Fi Routers (Provisioned dynamically by Admin)
+export const INITIAL_ROUTERS: RouterDevice[] = []
 
-// Initial Provider Nodes (Routers / Servers Providing Internet UP to Cloud Mesh)
-export const INITIAL_PROVIDER_NODES: ProviderNode[] = [
-  {
-    id: 'uplink-home',
-    name: 'Admin Home Wi-Fi Router',
-    type: 'home_router',
-    locationLabel: 'Home Base (1 Gbps Fiber)',
-    upstreamBandwidthMbps: 350,
-    connectedConsumersCount: 3,
-    status: 'online',
-    qrShareToken: 'AEGIS-HOME-ROUTER-P2P-SHARE-TOKEN',
-    ipCloaked: '100.64.12.1 [Home Gateway Cloaked]',
-    lossPercent: 0,
-    latencyMs: 12,
-    isHomeRouter: true
-  },
-  {
-    id: 'uplink-office',
-    name: 'Field / Office Router AP',
-    type: 'field_router',
-    locationLabel: 'Secondary Office Uplink',
-    upstreamBandwidthMbps: 150,
-    connectedConsumersCount: 5,
-    status: 'online',
-    qrShareToken: 'AEGIS-OFFICE-ROUTER-P2P-TOKEN',
-    ipCloaked: '100.64.24.8 [Office Cloaked]',
-    lossPercent: 0,
-    latencyMs: 18,
-    isHomeRouter: false
-  },
-  {
-    id: 'uplink-server',
-    name: 'Scale-Up Dedicated Server Core',
-    type: 'dedicated_server',
-    locationLabel: 'High-Scale Datacenter Node (10 Gbps)',
-    upstreamBandwidthMbps: 1000,
-    connectedConsumersCount: 18,
-    status: 'online',
-    qrShareToken: 'AEGIS-SCALE-SERVER-TOKEN',
-    ipCloaked: '100.64.99.1 [Datacenter Cloaked]',
-    lossPercent: 0,
-    latencyMs: 6,
-    isHomeRouter: false
-  }
-]
+// Provider Nodes supplying internet UP to Cloud (Enrolled dynamically)
+export const INITIAL_PROVIDER_NODES: ProviderNode[] = []
 
 // Initial Cloud Server Relay & Ingress Configuration
 export const INITIAL_CLOUD_CONFIG: CloudServerConfig = {
-  serverPublicIp: '198.51.100.42', // Public IPv4 of rented Cloud VPS
+  serverPublicIp: '198.51.100.42', // Public IPv4 of rented Cloud VPS (Configurable in Admin)
   wireguardPort: 51820,
   httpPort: 3888,
   serverUrl: 'http://localhost:3888',
   adminApiKey: 'AEGIS-CLOUD-SECRET-KEY-2026',
   syncIntervalSeconds: 10,
   autoSyncEnabled: true,
-  connectionStatus: 'connected',
-  lastPingLatencyMs: 14,
-  lastSyncedAt: Date.now(),
-  contributeAsIngress: true,
+  connectionStatus: 'disconnected',
+  lastPingLatencyMs: 0,
+  lastSyncedAt: 0,
+  contributeAsIngress: false,
   ingressType: 'home_router',
-  ingressBandwidthMbps: 350,
+  ingressBandwidthMbps: 0,
   ingressName: 'Admin Home Wi-Fi Gateway',
   publicPortalDomain: 'cloud.aegis-protocol.net',
   tlsAutoCert: true,
@@ -705,28 +590,8 @@ const INITIAL_THREATS: ThreatEvent[] = []
 // Initial Client Feedback (Populated dynamically from portal submissions)
 const INITIAL_FEEDBACK: ClientFeedback[] = []
 
-// Local Active Node in Mesh (External peers populated dynamically upon connection)
-const INITIAL_PEERS: Peer[] = [
-  {
-    id: 'local-mesh-gateway',
-    blindedIp: '100.64.12.1 [Router-Cloaked]',
-    name: 'Aegis Mesh Gateway AP',
-    platform: 'windows',
-    status: 'online',
-    hasInternet: true,
-    isProvider: true,
-    role: 'master_admin',
-    uploadKbps: 45000,
-    downloadKbps: 180000,
-    latency: 14,
-    packetLoss: 0,
-    jitter: 1,
-    dataUsed: 0,
-    connectedSince: Date.now(),
-    score: 300,
-    securityShield: 'Noise_XX_25519 (Zero IP Leak Active)'
-  }
-]
+// Peers populated dynamically upon connection
+const INITIAL_PEERS: Peer[] = []
 
 function formatTime(d: Date) {
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`
@@ -750,10 +615,10 @@ export const useAegisStore = create<AegisState>((set, get) => ({
   blindedVirtualIp: '100.64.0.1 [Cloaked Gateway]',
   myName: 'Aegis Node',
   myPlatform: 'windows',
-  hasInternet: true,
+  hasInternet: false,
   isProvider: false,
-  uploadKbps: 68400,
-  downloadKbps: 185600,
+  uploadKbps: 0,
+  downloadKbps: 0,
 
   // Portal & Role Separation (Client vs Admin Portal - STRICT OVERSEER LOCK)
   appPortalMode: 'client',
@@ -787,39 +652,8 @@ export const useAegisStore = create<AegisState>((set, get) => ({
     set({ adminUnlocked: false, appPortalMode: 'client' })
   },
 
-  // Overseer Admin Real-Time Notification Center
-  adminNotifications: [
-    {
-      id: 'notif-1',
-      type: 'system',
-      category: 'system',
-      title: 'Overseer Core Initialized',
-      message: 'Zero-trace cloud mesh egress active. WireGuard MTU 1420 clamped.',
-      timestamp: Date.now() - 1000 * 60 * 12,
-      read: false,
-      severity: 'info'
-    },
-    {
-      id: 'notif-2',
-      type: 'router_alert',
-      category: 'system',
-      title: 'Wi-Fi Fleet Gateway Synced',
-      message: 'Gateway 100.64.12.1 [Router-Cloaked] verified healthy. Latency: 16ms.',
-      timestamp: Date.now() - 1000 * 60 * 7,
-      read: false,
-      severity: 'success'
-    },
-    {
-      id: 'notif-3',
-      type: 'threat_blocked',
-      category: 'security',
-      title: 'Anti-MITM Defense Engaged',
-      message: 'Scrubbed Layer-2 ARP beacon probe. Zero telemetry leakage verified.',
-      timestamp: Date.now() - 1000 * 60 * 2,
-      read: false,
-      severity: 'danger'
-    }
-  ],
+  // Overseer Admin Real-Time Notification Center (Populated dynamically)
+  adminNotifications: [],
   latestAdminToast: null,
   dismissAdminToast: () => set({ latestAdminToast: null }),
   addAdminNotification: (n) => {
@@ -850,41 +684,37 @@ export const useAegisStore = create<AegisState>((set, get) => ({
   clearAdminNotifications: () =>
     set({ adminNotifications: [], latestAdminToast: null }),
 
-  // Turbo Speed & Signal Strength (Outstanding & Blazing Fast)
-  turboBoostEnabled: true,
+  // Turbo Speed & Signal Strength (Physical link diagnostics)
+  turboBoostEnabled: false,
   toggleTurboBoost: () =>
     set((s) => ({
-      turboBoostEnabled: !s.turboBoostEnabled,
-      downloadKbps: !s.turboBoostEnabled ? 215000 : 95000,
-      uploadKbps: !s.turboBoostEnabled ? 78000 : 38000
+      turboBoostEnabled: !s.turboBoostEnabled
     })),
-  signalStrengthDbm: -38,
-  signalBars: 5,
-  linkSpeedMbps: 1200,
-  channelSpectrum: '5 GHz / 6 GHz (160 MHz Channel Bonding)',
-  mimoConfig: '4x4 MU-MIMO Directed Beamforming',
-  congestionControl: 'BBR v3 + QUIC Fast Path (0-RTT)',
+  signalStrengthDbm: 0,
+  signalBars: 0,
+  linkSpeedMbps: 0,
+  channelSpectrum: 'Standby / Auto-Scan',
+  mimoConfig: 'Hardware AP Beamforming',
+  congestionControl: 'BBR v3 / Cubic Linux Kernel',
 
   // Version Releases & OTA Update Engine
   appUpdate: {
     currentVersion: '2.4.2',
     latestVersion: '2.5.0',
-    hasUpdate: true,
-    releaseTitle: 'Aegis Protocol v2.5.0 — Turbo Speed & Signal Booster Edition',
+    hasUpdate: false,
+    releaseTitle: 'Aegis Protocol v2.5.0',
     releaseDate: 'October 2026',
     releaseNotes: [
-      'Outstanding Network Speed: 1.2 Gbps Link Rate via Wi-Fi 6E/7 Ultra-Wide 160MHz channels',
-      'BBR v3 congestion control + QUIC 0-RTT Fast Path low-latency acceleration',
-      'Signal Strength Booster: Directed 4x4 MU-MIMO Beamforming (-38 dBm Outstanding)',
-      'Zero-Tolerance automated killswitch across all 5 channels in 0ms',
-      'Instant In-App OTA Update Trigger with seamless hot-reload'
+      'Multi-Route Mesh Ingress Architecture with Direct Cloud VPS Egress',
+      'Real-time physical link telemetry with zero synthetic mock jitter',
+      'Strict Layer-2 MAC scrubbing and zk-NAT client IP cloaking'
     ],
     downloadProgress: 0,
-    status: 'available'
+    status: 'up_to_date'
   },
 
-  adminConnected: true,
-  adminUptimeSeconds: 1420,
+  adminConnected: false,
+  adminUptimeSeconds: 0,
 
   // Anti-MITM & Anonymity Engine
   antiMitmShield: {
@@ -922,51 +752,38 @@ export const useAegisStore = create<AegisState>((set, get) => ({
       revealedPeerIds: { ...s.revealedPeerIds, [id]: !s.revealedPeerIds[id] }
     })),
 
-  connectionStatus: 'connected',
+  connectionStatus: 'disconnected',
   toggleConnection: () =>
     set((s) => {
       const isNowConnected = s.connectionStatus !== 'connected'
       return {
         connectionStatus: isNowConnected ? 'connected' : 'disconnected',
-        downloadKbps: isNowConnected ? (s.turboBoostEnabled ? 215000 : 95000) : 0,
-        uploadKbps: isNowConnected ? (s.turboBoostEnabled ? 78000 : 38000) : 0
+        downloadKbps: isNowConnected ? s.downloadKbps : 0,
+        uploadKbps: isNowConnected ? s.uploadKbps : 0
       }
     }),
   autoSwitch: true,
   isDegradedConnection: false,
   networkHealth: {
-    online: true,
-    latencyMs: 8,
-    jitterMs: 1,
+    online: false,
+    latencyMs: 0,
+    jitterMs: 0,
     packetLossPercent: 0,
-    target: 'Cloudflare/Quad9 (DoH Encrypted)',
-    lastChecked: Date.now(),
+    target: 'Cloud VPS / DNS Gateway',
+    lastChecked: 0,
     dnsEncrypted: true,
     antiMitmVerified: true
   },
-  totalDataShared: 4.2 * 1024 * 1024 * 1024,
+  totalDataShared: 0,
 
-  speedHistory: Array.from({ length: 25 }, (_, i) => ({
-    time: formatTime(new Date(Date.now() - (24 - i) * 2000)),
-    upload: Math.round(65000 + Math.sin(i * 0.5) * 6000),
-    download: Math.round(185000 + Math.sin(i * 0.5) * 20000),
-    latency: Math.round(7 + (i % 3))
-  })),
+  speedHistory: [],
 
   peers: INITIAL_PEERS,
   globalQuota: 0,
   peerQuotas: {},
 
   packages: STANDARD_PACKAGES,
-  activeSession: {
-    packageId: 'free',
-    packageName: 'Free Guest Pass',
-    startTime: Date.now(),
-    expiresAt: Date.now() + 30 * 60 * 1000,
-    quotaBytes: 250 * 1024 * 1024,
-    bytesUsed: 46 * 1024 * 1024,
-    status: 'active'
-  },
+  activeSession: null,
 
   portalUrl: 'http://127.0.0.1:3888',
   localIp: '127.0.0.1',
@@ -1022,27 +839,6 @@ export const useAegisStore = create<AegisState>((set, get) => ({
     set((s) => ({
       threats: s.threats.map((t) => (t.id === id ? { ...t, status: 'mitigated' as const } : t))
     }))
-  },
-
-  simulateAttackVector: async (vector) => {
-    if (typeof window !== 'undefined' && window.api?.simulateAttackVector) {
-      await window.api.simulateAttackVector(vector)
-    } else {
-      const channelMap: Record<string, ThreatEvent['channel']> = {
-        syn_flood: 'HTTP / Hotspot Gateway',
-        tampering: 'HTTP / Hotspot Gateway',
-        rogue_probe: 'P2P Noise Handshake',
-        arp_spoof: 'Mesh Wire / Packet',
-        quota_bypass: 'Mesh Wire / Packet',
-        mitm_intercept: 'Cloud Egress / DNS'
-      }
-      get().flagOffThreatImmediately({
-        type: vector,
-        channel: channelMap[vector] || 'Mesh Wire / Packet',
-        sourceNode: `100.64.${Math.floor(Math.random() * 200 + 10)}.${Math.floor(Math.random() * 200 + 10)} [Simulated Attack]`,
-        description: `Hostile probe intercepted and killed on channel. Flagged off in 0ms.`
-      })
-    }
   },
 
   blockThreat: (id) =>
@@ -1289,23 +1085,33 @@ export const useAegisStore = create<AegisState>((set, get) => ({
           }
         }))
         return { success: true, latencyMs, message: `Connected to Cloud Relay in ${latencyMs}ms` }
+      } else {
+        set((s) => ({
+          cloudConfig: {
+            ...s.cloudConfig,
+            connectionStatus: 'error',
+            lastPingLatencyMs: 0
+          }
+        }))
+        return {
+          success: false,
+          latencyMs: 0,
+          message: `Cloud Relay returned HTTP ${res.status} at ${serverUrl}`
+        }
       }
-    } catch {
-      // Graceful fallback for offline dev/isolated networks
-    }
-    const simulatedLatency = Math.floor(Math.random() * 8 + 12)
-    set((s) => ({
-      cloudConfig: {
-        ...s.cloudConfig,
-        connectionStatus: 'connected',
-        lastPingLatencyMs: simulatedLatency,
-        lastSyncedAt: Date.now()
+    } catch (err: any) {
+      set((s) => ({
+        cloudConfig: {
+          ...s.cloudConfig,
+          connectionStatus: 'error',
+          lastPingLatencyMs: 0
+        }
+      }))
+      return {
+        success: false,
+        latencyMs: 0,
+        message: `Failed to connect to Cloud Relay at ${serverUrl}: ${err?.message || 'Server offline or port unreachable'}`
       }
-    }))
-    return {
-      success: true,
-      latencyMs: simulatedLatency,
-      message: `Cloud Relay verified at ${serverUrl} (${simulatedLatency}ms · Anti-MITM Active)`
     }
   },
   syncPackagesToCloud: async () => {
@@ -1350,11 +1156,7 @@ export const useAegisStore = create<AegisState>((set, get) => ({
 
   loadBalanceStrategy: 'least_latency',
   setLoadBalanceStrategy: (strategy) => set({ loadBalanceStrategy: strategy }),
-  loadDistribution: [
-    { routeId: 'cloud-01', name: 'Cloudflare WARP (Onion Egress)', percentage: 65, activeStreams: 8, throughputMbps: 3.2 },
-    { routeId: 'peer-mac', name: "MacBook Pro Blinded Peer", percentage: 25, activeStreams: 3, throughputMbps: 1.1 },
-    { routeId: 'cloud-02', name: 'AWS WireGuard (Onion Tunnel)', percentage: 10, activeStreams: 1, throughputMbps: 0.4 }
-  ],
+  loadDistribution: [],
 
   feedbacks: INITIAL_FEEDBACK,
   submitFeedback: (fb) => {
@@ -1674,28 +1476,28 @@ export const useAegisStore = create<AegisState>((set, get) => ({
       }
     }
 
-    // 4. Append live speed point (Outstanding Multi-Megabit Performance)
+    // 4. Append live speed point (Real Physical Link Telemetry - Zero Synthetic Jitter)
+    const isConnected = state.connectionStatus === 'connected'
     const currentProvider = updatedPeers.find((p) => p.isProvider)
-    const baseUpload = currentProvider ? currentProvider.uploadKbps : state.uploadKbps
-    const baseDownload = currentProvider ? currentProvider.downloadKbps : state.downloadKbps
-    const jitter = Math.round((Math.random() - 0.48) * 8000)
-    const dynamicDown = Math.max(120000, baseDownload + jitter)
-    const dynamicUp = Math.max(45000, baseUpload + Math.round(jitter * 0.35))
+    const activeUpload = isConnected ? (currentProvider ? currentProvider.uploadKbps : state.uploadKbps) : 0
+    const activeDownload = isConnected ? (currentProvider ? currentProvider.downloadKbps : state.downloadKbps) : 0
 
-    const newPoint: SpeedPoint = {
-      time: formatTime(now),
-      upload: dynamicUp,
-      download: dynamicDown,
-      latency: Math.max(4, Math.round(health.latencyMs + (Math.random() * 2)))
+    let newHistory = state.speedHistory
+    if (isConnected || state.speedHistory.length > 0) {
+      const newPoint: SpeedPoint = {
+        time: formatTime(now),
+        upload: activeUpload,
+        download: activeDownload,
+        latency: health.online ? health.latencyMs : 0
+      }
+      newHistory = [...state.speedHistory.slice(-29), newPoint]
     }
-
-    const newHistory = [...state.speedHistory.slice(-29), newPoint]
 
     set({
       peers: updatedPeers,
       speedHistory: newHistory,
-      uploadKbps: dynamicUp,
-      downloadKbps: dynamicDown
+      uploadKbps: activeUpload,
+      downloadKbps: activeDownload
     })
   }
 }))

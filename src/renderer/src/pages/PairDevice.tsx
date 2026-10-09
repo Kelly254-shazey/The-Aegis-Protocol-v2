@@ -91,14 +91,14 @@ export default function PairDevice() {
         status: 'online',
         hasInternet: false,
         isProvider: false,
-        uploadKbps: 340,
-        downloadKbps: 1800,
-        latency: 32,
+        uploadKbps: 0,
+        downloadKbps: 0,
+        latency: 0,
         packetLoss: 0,
-        jitter: 3,
+        jitter: 0,
         dataUsed: 0,
         connectedSince: Date.now(),
-        score: 130
+        score: 100
       })
       navigate('/')
     }
