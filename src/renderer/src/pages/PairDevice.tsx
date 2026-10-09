@@ -83,10 +83,12 @@ export default function PairDevice() {
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault()
     if (joinCode.length === 6) {
+      const c1 = (joinCode.charCodeAt(0) * 17 + joinCode.charCodeAt(1)) % 250 + 1
+      const c2 = (joinCode.charCodeAt(2) * 23 + joinCode.charCodeAt(3)) % 250 + 1
       addPeer({
         id: `dev-${joinCode.toLowerCase()}`,
         name: 'Paired Companion Phone',
-        blindedIp: `100.64.${Math.floor(Math.random() * 200 + 10)}.${Math.floor(Math.random() * 200 + 10)} [Cloaked/Onion]`,
+        blindedIp: `100.64.${c1}.${c2} [Cloaked/Onion]`,
         platform: 'android',
         status: 'online',
         hasInternet: false,

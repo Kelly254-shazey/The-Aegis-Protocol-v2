@@ -494,10 +494,10 @@ export const INITIAL_PROVIDER_NODES: ProviderNode[] = []
 
 // Initial Cloud Server Relay & Ingress Configuration
 export const INITIAL_CLOUD_CONFIG: CloudServerConfig = {
-  serverPublicIp: '198.51.100.42', // Public IPv4 of rented Cloud VPS (Configurable in Admin)
+  serverPublicIp: '172.209.217.140', // Public IPv4 of rented Cloud VPS on Azure
   wireguardPort: 51820,
   httpPort: 3888,
-  serverUrl: 'http://localhost:3888',
+  serverUrl: 'http://172.209.217.140:3888',
   adminApiKey: 'AEGIS-CLOUD-SECRET-KEY-2026',
   syncIntervalSeconds: 10,
   autoSyncEnabled: true,
@@ -785,8 +785,8 @@ export const useAegisStore = create<AegisState>((set, get) => ({
   packages: STANDARD_PACKAGES,
   activeSession: null,
 
-  portalUrl: 'http://127.0.0.1:3888',
-  localIp: '127.0.0.1',
+  portalUrl: 'http://172.209.217.140:3888',
+  localIp: '172.209.217.140',
   inviteCode: null,
   inviteLink: null,
 
