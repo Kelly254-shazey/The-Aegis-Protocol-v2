@@ -581,19 +581,31 @@ const server = http.createServer((req, res) => {
       </div>
 
       <button id="btnInstallApp" class="btn-primary" onclick="triggerAppInstall()">
-        <span>⚡ Install Aegis App (1-Tap)</span>
+        <span>⚡ Install Aegis App on This Phone</span>
       </button>
 
+      <!-- Android Specific Instructions -->
+      <div id="androidInstallGuide" class="ios-box" style="display: block; background: rgba(6, 182, 212, 0.12); border-color: rgba(6, 182, 212, 0.35);">
+        <div style="font-weight: 700; margin-bottom: 6px; color: var(--cyan); display: flex; align-items: center; gap: 6px;">
+          <span>🤖 Android 2-Step Install:</span>
+        </div>
+        1. Tap the <b>3 dots menu (⋮)</b> in the top right of Chrome.<br />
+        2. Tap <b>"Install app"</b> (or <b>"Add to Home screen"</b>).<br />
+        3. Tap <b>"Install"</b> — The Aegis App icon will appear on your phone!
+      </div>
+
       <!-- iOS Safari Specific Instructions -->
-      <div id="iosInstallGuide" class="ios-box">
-        <div style="font-weight: 700; margin-bottom: 4px; color: #fff;">📱 iOS Safari Installation:</div>
-        1. Tap the <b>Share button</b> (⎋ / ⎙) in the Safari toolbar.<br />
+      <div id="iosInstallGuide" class="ios-box" style="display: none; background: rgba(37, 99, 235, 0.12); border-color: rgba(37, 99, 235, 0.35);">
+        <div style="font-weight: 700; margin-bottom: 6px; color: #60a5fa; display: flex; align-items: center; gap: 6px;">
+          <span>📱 iPhone Safari 2-Step Install:</span>
+        </div>
+        1. Tap the <b>Share button ([↑])</b> in the bottom Safari toolbar.<br />
         2. Scroll down and tap <b>"Add to Home Screen"</b>.<br />
-        3. Tap <b>"Add"</b> — The Aegis App will appear on your screen!
+        3. Tap <b>"Add"</b> at the top right — The Aegis App is now on your screen!
       </div>
 
       <button class="btn-outline" onclick="openWebPortalDirectly()">
-        Continue via Web Portal (Skip App Install) →
+        Open Web Portal in Browser (Without Installing) →
       </button>
     </div>
 
@@ -713,13 +725,16 @@ const server = http.createServer((req, res) => {
       showPortalCockpit();
     });
 
-    // Detect iOS
-    if (/iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream) {
+    // Platform detection for phone install guides
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
       const iosGuide = document.getElementById('iosInstallGuide');
+      const androidGuide = document.getElementById('androidInstallGuide');
       if (iosGuide && !isStandalone) iosGuide.style.display = 'block';
+      if (androidGuide) androidGuide.style.display = 'none';
     }
 
-    // Initialize View
+    // Initialize View (Only show cockpit if actually launched as installed standalone app)
     if (isStandalone) {
       showPortalCockpit();
     }
@@ -748,11 +763,11 @@ const server = http.createServer((req, res) => {
           showPortalCockpit();
         }
       } else {
-        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-          alert("To install on iOS: Tap Share at bottom of Safari, then choose 'Add to Home Screen'.");
-        } else {
-          sessionStorage.setItem('aegis_portal_mode', 'true');
-          showPortalCockpit();
+        const guide = isIOS ? document.getElementById('iosInstallGuide') : document.getElementById('androidInstallGuide');
+        if (guide) {
+          guide.style.boxShadow = '0 0 25px rgba(6, 182, 212, 0.6)';
+          guide.style.borderColor = '#06b6d4';
+          guide.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }
     }
