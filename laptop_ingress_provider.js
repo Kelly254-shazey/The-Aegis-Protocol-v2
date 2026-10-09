@@ -77,10 +77,93 @@ function registerProvider() {
   req.end()
 }
 
-// Initial registration
+// 1. Initial registration
 registerProvider()
 
-// Periodic heartbeat & channel keepalive every 30 seconds
+// 2. Start worker polling loop (Fetch client requests via Laptop Broadband)
+function pollChannelTask() {
+  const url = new URL(CLOUD_URL + '/api/channel/provider/poll')
+  const req = https.get(
+    {
+      hostname: url.hostname,
+      port: 443,
+      path: url.pathname,
+      timeout: 30000
+    },
+    (res) => {
+      if (res.statusCode === 200) {
+        let body = ''
+        res.on('data', (d) => (body += d))
+        res.on('end', () => {
+          try {
+            const task = JSON.parse(body)
+            if (task.taskId && task.url) {
+              console.log(`[⚡] Received Client Request for: ${task.url}`)
+              fetchAndResolve(task.taskId, task.url)
+            }
+          } catch {}
+          setImmediate(pollChannelTask)
+        })
+      } else {
+        setTimeout(pollChannelTask, 2000)
+      }
+    }
+  )
+
+  req.on('error', () => {
+    setTimeout(pollChannelTask, 3000)
+  })
+
+  req.on('timeout', () => {
+    req.destroy()
+    setImmediate(pollChannelTask)
+  })
+}
+
+function fetchAndResolve(taskId, targetUrl) {
+  const start = Date.now()
+  const mod = targetUrl.startsWith('https:') ? https : http
+  const clientReq = mod.get(targetUrl, { timeout: 8000 }, (upstreamRes) => {
+    let data = ''
+    upstreamRes.on('data', (c) => {
+      if (data.length < 32768) data += c
+    })
+    upstreamRes.on('end', () => {
+      const lat = Date.now() - start
+      console.log(`[✓] Fetched ${targetUrl} via Laptop Broadband (${lat}ms, ${data.length} bytes)`)
+      sendResolution(taskId, data, lat)
+    })
+  })
+  clientReq.on('error', (err) => {
+    sendResolution(taskId, 'Fetch error: ' + err.message, Date.now() - start)
+  })
+}
+
+function sendResolution(taskId, data, latencyMs) {
+  const payload = JSON.stringify({ taskId, data, latencyMs, bytes: data.length })
+  const url = new URL(CLOUD_URL + '/api/channel/provider/resolve')
+  const postReq = https.request(
+    {
+      hostname: url.hostname,
+      port: 443,
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    },
+    () => {}
+  )
+  postReq.on('error', () => {})
+  postReq.write(payload)
+  postReq.end()
+}
+
+// Start polling
+pollChannelTask()
+
+// 3. Periodic heartbeat & channel keepalive every 30 seconds
 setInterval(() => {
   const start = Date.now()
   https
