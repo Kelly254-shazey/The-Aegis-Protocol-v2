@@ -718,6 +718,7 @@ PersistentKeepalive = 25
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="switchTab('peers', this)">👥 Connected Peers</button>
         <button class="tab-btn" onclick="switchTab('packages', this)">📦 Hotspot Passes</button>
+        <button class="tab-btn" onclick="switchTab('providers', this)">📡 Ingress Routers</button>
         <button class="tab-btn" onclick="switchTab('threats', this)">🛡️ Threat Quarantine</button>
         <button class="tab-btn" onclick="switchTab('feedback', this)">💬 Client Feedback</button>
       </div>
@@ -776,6 +777,28 @@ PersistentKeepalive = 25
         <div style="font-weight: 700; font-size: 15px; margin-bottom: 4px;">Client Feedback & Support Reports</div>
         <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Direct encrypted feedback received from clients via mobile portals.</div>
         <div id="feedbackList"></div>
+      </div>
+
+      <!-- TAB 5: Ingress Routers & Gateways -->
+      <div id="tabProviders" class="card" style="display: none;">
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 4px;">Physical Routers & Ingress Fleet</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Active broadband routers & laptop gateways sending physical internet up to the cloud channel.</div>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Router / Gateway Name</th>
+                <th>Location / Pipeline</th>
+                <th>Capacity</th>
+                <th>Blinded Ingress IP</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="providersTbody">
+              <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">No ingress routers connected yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
     </div>
@@ -914,6 +937,27 @@ PersistentKeepalive = 25
       } else {
         fbList.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No feedback reports submitted yet.</div>';
       }
+
+      // Render Providers / Ingress Routers
+      const providersTbody = document.getElementById('providersTbody');
+      if (providersTbody) {
+        if (data.providers && data.providers.length > 0) {
+          providersTbody.innerHTML = '';
+          data.providers.forEach(pr => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = \`
+              <td style="color: var(--cyan); font-weight: 700;">\${pr.name}</td>
+              <td>\${pr.location}</td>
+              <td><span style="color: var(--green); font-weight: 700;">\${pr.bandwidthMbps} Mbps</span></td>
+              <td>\${pr.blindedIp}</td>
+              <td><span class="gold-badge" style="background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: var(--green);">● \${pr.status.toUpperCase()}</span></td>
+            \`;
+            providersTbody.appendChild(tr);
+          });
+        } else {
+          providersTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">No ingress routers connected yet.</td></tr>';
+        }
+      }
     }
 
     async function disconnectPeer(sessionToken) {
@@ -938,7 +982,7 @@ PersistentKeepalive = 25
     function switchTab(name, btn) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      ['peers', 'packages', 'threats', 'feedback'].forEach(t => {
+      ['peers', 'packages', 'threats', 'feedback', 'providers'].forEach(t => {
         const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
         if (el) el.style.display = t === name ? 'block' : 'none';
       });
