@@ -4,10 +4,10 @@
 // Enables remote mobile clients to route internet through this Ingress Node
 // ==============================================================================
 
-const https = require('https')
 const http = require('http')
+const https = require('https')
 
-const CLOUD_URL = 'https://172-209-217-140.sslip.io'
+const CLOUD_URL = process.env.CLOUD_URL || 'http://172.209.217.140:3888'
 const PROVIDER_ID = 'provider-laptop-master'
 const PROVIDER_NAME = 'Master Laptop Ingress Gateway'
 const LOCATION = 'Residential Broadband Ingress'
@@ -20,6 +20,10 @@ console.log(`📡 Ingress Identity:   ${PROVIDER_NAME} (${PROVIDER_ID})`)
 console.log(`⚡ Max Pipeline:        ${BANDWIDTH_MBPS} Mbps Broadband Uplink`)
 console.log('==================================================================')
 
+function getClient(urlStr) {
+  return urlStr.startsWith('https:') ? https : http
+}
+
 function registerProvider() {
   const payload = JSON.stringify({
     id: PROVIDER_ID,
@@ -31,17 +35,18 @@ function registerProvider() {
   })
 
   const url = new URL(CLOUD_URL + '/api/provider/register')
-  const req = https.request(
+  const client = getClient(url.protocol)
+  const req = client.request(
     {
       hostname: url.hostname,
-      port: 443,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
       path: url.pathname,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(payload)
       },
-      timeout: 8000
+      timeout: 10000
     },
     (res) => {
       let body = ''
@@ -66,11 +71,12 @@ function registerProvider() {
 
   req.on('error', (err) => {
     console.error(`[X] Uplink connection error:`, err.message)
+    setTimeout(registerProvider, 5000)
   })
 
   req.on('timeout', () => {
     req.destroy()
-    console.warn(`[!] Uplink timeout connecting to ${CLOUD_URL}`)
+    setTimeout(registerProvider, 5000)
   })
 
   req.write(payload)
@@ -83,10 +89,11 @@ registerProvider()
 // 2. Start worker polling loop (Fetch client requests via Laptop Broadband)
 function pollChannelTask() {
   const url = new URL(CLOUD_URL + '/api/channel/provider/poll')
-  const req = https.get(
+  const client = getClient(url.protocol)
+  const req = client.get(
     {
       hostname: url.hostname,
-      port: 443,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
       path: url.pathname,
       timeout: 30000
     },
@@ -142,10 +149,11 @@ function fetchAndResolve(taskId, targetUrl) {
 function sendResolution(taskId, data, latencyMs) {
   const payload = JSON.stringify({ taskId, data, latencyMs, bytes: data.length })
   const url = new URL(CLOUD_URL + '/api/channel/provider/resolve')
-  const postReq = https.request(
+  const client = getClient(url.protocol)
+  const postReq = client.request(
     {
       hostname: url.hostname,
-      port: 443,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
       path: url.pathname,
       method: 'POST',
       headers: {
@@ -166,8 +174,10 @@ pollChannelTask()
 // 3. Periodic heartbeat & channel keepalive every 30 seconds
 setInterval(() => {
   const start = Date.now()
-  https
-    .get(CLOUD_URL + '/api/ping', { timeout: 5000 }, (res) => {
+  const url = new URL(CLOUD_URL + '/api/ping')
+  const client = getClient(url.protocol)
+  client
+    .get({ hostname: url.hostname, port: url.port || 80, path: url.pathname, timeout: 5000 }, (res) => {
       const lat = Date.now() - start
       console.log(`[♥] Channel Heartbeat: OK (${lat}ms latency to Azure South Africa Relay)`)
     })
