@@ -649,13 +649,13 @@ const server = http.createServer((req, res) => {
         </button>
       </div>
 
-      <!-- Voucher & Passcode Redemption Card -->
+      <!-- Voucher Redemption Card -->
       <div class="glass-card">
         <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.05em;">
-          Have a Voucher or Admin Passcode?
+          Have an Access Voucher?
         </div>
         <div style="display: flex; gap: 8px;">
-          <input id="voucherCodeInput" type="text" placeholder="Enter Voucher or PIN (e.g. admin2026)" class="portal-input" />
+          <input id="voucherCodeInput" type="text" placeholder="Enter Access Voucher Code" class="portal-input" />
           <button class="btn-primary" style="width: auto; padding: 0 18px; font-size: 13px;" onclick="redeemVoucher()">
             Redeem
           </button>

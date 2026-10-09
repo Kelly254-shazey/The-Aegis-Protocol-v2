@@ -212,7 +212,7 @@ export function AdminAuthModal({ isOpen, onClose, onSuccess }: AdminAuthModalPro
                 onChange={(e) => setPasscode(e.target.value)}
                 disabled={lockoutSeconds > 0 || isSuccess}
                 autoFocus
-                placeholder="Enter passcode (e.g. admin2026)"
+                placeholder="Enter Master Overseer Passcode"
                 style={{
                   width: '100%',
                   background: 'rgba(0, 0, 0, 0.45)',
@@ -260,7 +260,7 @@ export function AdminAuthModal({ isOpen, onClose, onSuccess }: AdminAuthModalPro
                 color: 'var(--text-muted)'
               }}
             >
-              <span>Default key: <code style={{ color: 'var(--gold-bright)' }}>admin2026</code></span>
+              <span>Encrypted overseer authorization required</span>
               {lockoutSeconds > 0 && (
                 <span style={{ color: 'var(--danger)', fontWeight: 700 }}>
                   Locked: {lockoutSeconds}s
