@@ -135,6 +135,16 @@ const server = http.createServer((req, res) => {
 
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`)
 
+  // --- AUTOMATIC SECURE REDIRECT FOR BROWSERS ---
+  // When an external browser hits HTTP (port 3888 directly), seamlessly redirect to verified HTTPS
+  const isHttps = req.headers['x-forwarded-proto'] === 'https'
+  const isLocal = req.headers.host && (req.headers.host.includes('localhost') || req.headers.host.includes('127.0.0.1'))
+  if (!isHttps && !isLocal && req.method === 'GET' && !url.pathname.startsWith('/api') && !url.pathname.startsWith('/health')) {
+    res.writeHead(302, { Location: `https://172-209-217-140.sslip.io${req.url}` })
+    res.end()
+    return
+  }
+
   // --- PWA MANIFEST ROUTE: Web App Manifest for App Installation ---
   if (url.pathname === '/manifest.json' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/manifest+json; charset=utf-8' })
@@ -143,6 +153,7 @@ const server = http.createServer((req, res) => {
         name: 'The Aegis Protocol',
         short_name: 'Aegis Client',
         description: 'Zero-Leak Autonomous Bandwidth Mesh & Client Portal',
+        id: '/?app=installed',
         start_url: '/?app=installed',
         scope: '/',
         display: 'standalone',
@@ -154,13 +165,25 @@ const server = http.createServer((req, res) => {
             src: '/icon-192.png',
             sizes: '192x192',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: '/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
           },
           {
             src: '/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       })
