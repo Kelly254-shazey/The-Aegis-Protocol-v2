@@ -64,6 +64,7 @@ const quarantinedIps = new Set()
 const ipRequestTracker = new Map()
 const feedbacks = []
 const activePeers = new Map()
+const adminSessions = new Set()
 
 function cloakIp(ip) {
   if (!ip) return '100.64.48.19'
@@ -480,6 +481,458 @@ const server = http.createServer((req, res) => {
     return
   }
 
+  // ==========================================================================
+  // MASTER OVERSEER WEB ADMIN CONSOLE API & ROUTES
+  // ==========================================================================
+
+  // --- API: Admin Login ---
+  if (url.pathname === '/api/admin/login' && req.method === 'POST') {
+    let body = ''
+    req.on('data', (c) => (body += c))
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body || '{}')
+        const pass = (data.passcode || '').trim()
+        if (pass === 'admin2026' || pass === '9942') {
+          const token = 'adm-' + crypto.randomBytes(24).toString('hex')
+          adminSessions.add(token)
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ status: 'ok', token }))
+          return
+        }
+        res.writeHead(401, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Invalid Master Overseer Passcode' }))
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Malformed request' }))
+      }
+    })
+    return
+  }
+
+  // --- API: Admin Overview Statistics ---
+  if (url.pathname === '/api/admin/overview' && req.method === 'GET') {
+    const token = req.headers['x-aegis-admin-token']
+    if (!adminSessions.has(token)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'Unauthorized. Admin session required.' }))
+      return
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(
+      JSON.stringify({
+        uptime: Math.round(process.uptime()),
+        memoryMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
+        activePeers: Array.from(activePeers.values()),
+        packages: activePackages,
+        quarantinedIps: Array.from(quarantinedIps),
+        feedbacks: feedbacks,
+        providers: providerUplinks
+      })
+    )
+    return
+  }
+
+  // --- API: Disconnect Peer ---
+  if (url.pathname === '/api/admin/disconnect-peer' && req.method === 'POST') {
+    const token = req.headers['x-aegis-admin-token']
+    if (!adminSessions.has(token)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'Unauthorized' }))
+      return
+    }
+    let body = ''
+    req.on('data', (c) => (body += c))
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body || '{}')
+        if (data.sessionToken) {
+          activePeers.delete(data.sessionToken)
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ status: 'ok', disconnected: true }))
+          return
+        }
+      } catch {}
+      res.writeHead(400, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'Invalid peer session token' }))
+    })
+    return
+  }
+
+  // --- API: Unban Quarantined IP ---
+  if (url.pathname === '/api/admin/unban-ip' && req.method === 'POST') {
+    const token = req.headers['x-aegis-admin-token']
+    if (!adminSessions.has(token)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'Unauthorized' }))
+      return
+    }
+    let body = ''
+    req.on('data', (c) => (body += c))
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body || '{}')
+        if (data.ip) {
+          quarantinedIps.delete(data.ip)
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ status: 'ok', unbanned: data.ip }))
+          return
+        }
+      } catch {}
+      res.writeHead(400, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'Invalid IP parameter' }))
+    })
+    return
+  }
+
+  // --- ROUTE: MASTER OVERSEER ADMIN CONSOLE WEB INTERFACE ---
+  if (url.pathname === '/admin' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+    res.end(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Aegis Overseer — Web Admin Console</title>
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #060912;
+      --card: rgba(15, 23, 42, 0.75);
+      --border: rgba(255, 255, 255, 0.1);
+      --gold: #f59e0b;
+      --gold-glow: rgba(245, 158, 11, 0.35);
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    .container { width: 100%; max-width: 980px; margin: 0 auto; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; backdrop-filter: blur(16px); margin-bottom: 16px; }
+    .gold-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); color: var(--gold); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+    .stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-val { font-size: 26px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--gold); margin-top: 4px; }
+    .nav-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+    .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 8px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .tab-btn.active { background: rgba(245, 158, 11, 0.15); color: var(--gold); border: 1px solid rgba(245, 158, 11, 0.3); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+    th { text-align: left; padding: 10px 12px; color: var(--text-muted); font-size: 11px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+    .btn-action { padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; }
+    .btn-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: #fca5a5; }
+    .btn-danger:hover { background: var(--danger); color: #fff; }
+    .btn-primary { background: linear-gradient(135deg, var(--gold), #d97706); color: #000; font-weight: 800; padding: 10px 20px; border-radius: 12px; border: none; cursor: pointer; font-size: 13.5px; box-shadow: 0 4px 14px var(--gold-glow); }
+    .input-pass { padding: 12px 16px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 12px; color: #fff; font-size: 14px; width: 100%; outline: none; margin-bottom: 12px; }
+    .input-pass:focus { border-color: var(--gold); }
+    #loginModal { max-width: 420px; margin: 80px auto; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <!-- LOGIN VIEW -->
+    <div id="loginView" class="card" style="max-width: 420px; margin: 80px auto; text-align: center;">
+      <div class="gold-badge" style="margin-bottom: 14px;">🔒 MASTER OVERSEER AUTHENTICATION</div>
+      <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.02em;">Aegis Overseer Console</h2>
+      <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 20px;">
+        Restricted administrative terminal for 24/7 cloud relay, connected peers, and mesh fleet telemetry.
+      </p>
+      <input id="adminPassInput" type="password" placeholder="Enter Overseer Passcode" class="input-pass" autofocus />
+      <button class="btn-primary" style="width: 100%;" onclick="attemptAdminLogin()">Unlock Admin Console</button>
+      <div id="loginError" style="color: var(--danger); font-size: 12px; margin-top: 10px; display: none;"></div>
+      <div style="margin-top: 20px;">
+        <a href="/" style="font-size: 12px; color: var(--text-muted); text-decoration: none;">← Return to Client Portal</a>
+      </div>
+    </div>
+
+    <!-- MAIN DASHBOARD VIEW (Shown once authenticated) -->
+    <div id="dashView" style="display: none;">
+      
+      <div class="header">
+        <div>
+          <div class="gold-badge">● MASTER OVERSEER SESSION ACTIVE</div>
+          <h1 style="font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin-top: 6px;">
+            Aegis Overseer Command Console
+          </h1>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+            Target Host: <span style="color: var(--cyan); font-family: 'JetBrains Mono', monospace;">172-209-217-140.sslip.io (SSL)</span> · Port <span style="font-family: 'JetBrains Mono', monospace;">51820 UDP</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <a href="/" class="btn-action" style="background: rgba(255,255,255,0.06); color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 10px;">Client View</a>
+          <button class="btn-action btn-danger" onclick="logoutAdmin()">Lock Console</button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Active Connected Peers</div>
+          <div id="statPeers" class="stat-val">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Server Memory (RSS)</div>
+          <div id="statMem" class="stat-val" style="color: var(--cyan);">0 MB</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Service Uptime</div>
+          <div id="statUptime" class="stat-val" style="color: var(--green);">0s</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Intrusion Quarantine</div>
+          <div id="statQuarantine" class="stat-val" style="color: var(--danger);">0</div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('peers', this)">👥 Connected Peers</button>
+        <button class="tab-btn" onclick="switchTab('packages', this)">📦 Hotspot Passes</button>
+        <button class="tab-btn" onclick="switchTab('threats', this)">🛡️ Threat Quarantine</button>
+        <button class="tab-btn" onclick="switchTab('feedback', this)">💬 Client Feedback</button>
+      </div>
+
+      <!-- TAB 1: Connected Peers -->
+      <div id="tabPeers" class="card">
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 4px;">Live Connected Client Fleet</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Active mobile peers routed through the cloud relay with blinded IP protection.</div>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Peer ID</th>
+                <th>Blinded IP</th>
+                <th>Tier</th>
+                <th>Duration</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="peersTbody">
+              <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No active peers connected.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: Packages -->
+      <div id="tabPackages" class="card" style="display: none;">
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 4px;">Active Hotspot Access Packages</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Configure access duration, pricing, and quotas delivered to mobile portals.</div>
+        <div id="packagesList"></div>
+      </div>
+
+      <!-- TAB 3: Threats -->
+      <div id="tabThreats" class="card" style="display: none;">
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 4px;">Zero-Tolerance Intrusion Firewall</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">IPs permanently quarantined due to SYN flood, rapid request spikes, or injection attempts.</div>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Quarantined IP</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="threatsTbody">
+              <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Zero quarantined threats. Firewall clear.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 4: Feedback -->
+      <div id="tabFeedback" class="card" style="display: none;">
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 4px;">Client Feedback & Support Reports</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Direct encrypted feedback received from clients via mobile portals.</div>
+        <div id="feedbackList"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let adminToken = sessionStorage.getItem('aegis_admin_session_token');
+    let overviewInterval = null;
+
+    if (adminToken) {
+      showDashboard();
+    }
+
+    async function attemptAdminLogin() {
+      const passcode = document.getElementById('adminPassInput').value.trim();
+      const errEl = document.getElementById('loginError');
+      if (!passcode) return;
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ passcode })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          adminToken = data.token;
+          sessionStorage.setItem('aegis_admin_session_token', adminToken);
+          errEl.style.display = 'none';
+          showDashboard();
+        } else {
+          errEl.style.display = 'block';
+          errEl.innerText = data.error || 'Authentication Failed';
+        }
+      } catch {
+        errEl.style.display = 'block';
+        errEl.innerText = 'Failed to connect to cloud authentication service.';
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('loginView').style.display = 'none';
+      document.getElementById('dashView').style.display = 'block';
+      loadOverview();
+      overviewInterval = setInterval(loadOverview, 5000);
+    }
+
+    function logoutAdmin() {
+      adminToken = null;
+      sessionStorage.removeItem('aegis_admin_session_token');
+      if (overviewInterval) clearInterval(overviewInterval);
+      document.getElementById('dashView').style.display = 'none';
+      document.getElementById('loginView').style.display = 'block';
+    }
+
+    async function loadOverview() {
+      if (!adminToken) return;
+      try {
+        const res = await fetch('/api/admin/overview', {
+          headers: { 'X-Aegis-Admin-Token': adminToken }
+        });
+        if (res.status === 401) {
+          logoutAdmin();
+          return;
+        }
+        const data = await res.json();
+        renderOverview(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderOverview(data) {
+      document.getElementById('statPeers').innerText = (data.activePeers || []).length;
+      document.getElementById('statMem').innerText = data.memoryMb + ' MB';
+      
+      const up = data.uptime;
+      const hours = Math.floor(up / 3600);
+      const mins = Math.floor((up % 3600) / 60);
+      document.getElementById('statUptime').innerText = hours + 'h ' + mins + 'm';
+      
+      document.getElementById('statQuarantine').innerText = (data.quarantinedIps || []).length;
+
+      // Render Peers
+      const peersTbody = document.getElementById('peersTbody');
+      if (data.activePeers && data.activePeers.length > 0) {
+        peersTbody.innerHTML = '';
+        data.activePeers.forEach(p => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = \`
+            <td style="color: var(--cyan);">\${p.id}</td>
+            <td>\${p.blindedIp}</td>
+            <td><span class="gold-badge" style="font-size: 9.5px;">\${p.tier}</span></td>
+            <td>\${p.durationMinutes} min</td>
+            <td><button class="btn-action btn-danger" onclick="disconnectPeer('\${p.sessionToken}')">Disconnect</button></td>
+          \`;
+          peersTbody.appendChild(tr);
+        });
+      } else {
+        peersTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">No active peers currently connected.</td></tr>';
+      }
+
+      // Render Threats
+      const threatsTbody = document.getElementById('threatsTbody');
+      if (data.quarantinedIps && data.quarantinedIps.length > 0) {
+        threatsTbody.innerHTML = '';
+        data.quarantinedIps.forEach(ip => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = \`
+            <td style="color: var(--danger);">\${ip}</td>
+            <td><span style="color: var(--danger); font-weight: 700;">QUARANTINED</span></td>
+            <td><button class="btn-action" style="background: rgba(16, 185, 129, 0.2); border: 1px solid var(--green); color: #6ee7b7;" onclick="unbanIp('\${ip}')">Unban</button></td>
+          \`;
+          threatsTbody.appendChild(tr);
+        });
+      } else {
+        threatsTbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 20px;">Zero quarantined threats. Firewall fully clear.</td></tr>';
+      }
+
+      // Render Feedback
+      const fbList = document.getElementById('feedbackList');
+      if (data.feedbacks && data.feedbacks.length > 0) {
+        fbList.innerHTML = '';
+        data.feedbacks.forEach(f => {
+          const d = document.createElement('div');
+          d.style = 'padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px;';
+          d.innerHTML = \`
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-weight: 700; color: var(--cyan);">\${f.name}</span>
+              <span style="font-size: 11px; color: var(--gold);">★ \${f.rating}/5</span>
+            </div>
+            <div style="font-size: 13px; color: var(--text);">\${f.message}</div>
+          \`;
+          fbList.appendChild(d);
+        });
+      } else {
+        fbList.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No feedback reports submitted yet.</div>';
+      }
+    }
+
+    async function disconnectPeer(sessionToken) {
+      if (!confirm('Disconnect this client peer session immediately?')) return;
+      await fetch('/api/admin/disconnect-peer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Aegis-Admin-Token': adminToken },
+        body: JSON.stringify({ sessionToken })
+      });
+      loadOverview();
+    }
+
+    async function unbanIp(ip) {
+      await fetch('/api/admin/unban-ip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Aegis-Admin-Token': adminToken },
+        body: JSON.stringify({ ip })
+      });
+      loadOverview();
+    }
+
+    function switchTab(name, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      ['peers', 'packages', 'threats', 'feedback'].forEach(t => {
+        const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (el) el.style.display = t === name ? 'block' : 'none';
+      });
+    }
+
+    document.getElementById('adminPassInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') attemptAdminLogin();
+    });
+  </script>
+</body>
+</html>
+`)
+    return
+  }
+
   // --- SERVE THE DUAL-EXPERIENCE APP INSTALLER & CLIENT PORTAL COCKPIT ---
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
   res.end(`<!DOCTYPE html>
@@ -730,6 +1183,13 @@ const server = http.createServer((req, res) => {
       <div class="glass-card" style="text-align: center;">
         <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px;">Share Aegis App QR With Other Devices</div>
         <img id="shareQrImg" style="width: 110px; height: 110px; border-radius: 10px; background: #fff; padding: 6px;" alt="Aegis QR" />
+      </div>
+
+      <!-- Discreet Admin Console Link -->
+      <div style="text-align: center; margin-top: 14px; margin-bottom: 24px;">
+        <a href="/admin" style="font-size: 11.5px; color: var(--text-muted); opacity: 0.55; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+          <span>⚙️ Overseer Admin Console →</span>
+        </a>
       </div>
 
     </div>
