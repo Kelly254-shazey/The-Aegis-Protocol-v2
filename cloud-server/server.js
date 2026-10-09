@@ -1191,27 +1191,6 @@ PersistentKeepalive = 25
         <div id="voucherMsg" style="font-size: 11.5px; margin-top: 6px; display: none;"></div>
       </div>
 
-      <!-- Town / Anywhere WireGuard Tunnel Card -->
-      <div class="glass-card">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-          <div style="font-size: 13.5px; font-weight: 700; color: #fff;">🌐 Town / Anywhere Mode (VPN)</div>
-          <span class="badge badge-cyan" style="font-size: 10px; margin: 0;">WireGuard 24/7</span>
-        </div>
-        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
-          Going to town? Keep your phone protected with 0 IP leaks over 4G/5G mobile data or remote Wi-Fi.
-        </p>
-        <a href="/api/tunnel/wireguard.conf" download="aegis-mobile.conf" class="btn-primary" style="text-decoration: none; margin-bottom: 8px; justify-content: center;">
-          <span>⚡ Download VPN Profile (.conf)</span>
-        </a>
-        <button class="btn-outline" style="margin-top: 0;" onclick="toggleWireguardQr()">
-          📷 Show WireGuard QR Code
-        </button>
-        <div id="wgQrBox" style="display: none; text-align: center; margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.4); border-radius: 12px; border: 1px solid var(--card-border);">
-          <img id="wgQrImg" style="width: 170px; height: 170px; border-radius: 10px; background: #fff; padding: 8px;" alt="WireGuard QR" />
-          <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 8px;">Scan with <b>WireGuard app</b> camera on your phone</div>
-        </div>
-      </div>
-
       <!-- Feedback Card -->
       <div class="glass-card" style="text-align: center;">
         <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">Direct Admin Support</div>
@@ -1495,16 +1474,6 @@ PersistentKeepalive = 25
         } catch {
           alert('Feedback recorded.');
         }
-    function toggleWireguardQr() {
-      const box = document.getElementById('wgQrBox');
-      const img = document.getElementById('wgQrImg');
-      if (!box || !img) return;
-      if (box.style.display === 'none') {
-        box.style.display = 'block';
-        const confData = "[Interface]\nPrivateKey = OFZmrh2n9ATyqyBDvTSLzWZcQ7yEHmqpV+VRQ99ZEUI=\nAddress = 10.66.66.2/24\nDNS = 1.1.1.1, 8.8.8.8\n\n[Peer]\nPublicKey = 73qDgl+OL2zLEXOq03Q+oW3NWb1HoXETCLYMGqPeChY=\nEndpoint = 172.209.217.140:51820\nAllowedIPs = 0.0.0.0/0\nPersistentKeepalive = 25\n";
-        img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(confData);
-      } else {
-        box.style.display = 'none';
       }
     }
   </script>
