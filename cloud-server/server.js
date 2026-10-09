@@ -296,6 +296,26 @@ PersistentKeepalive = 25
     return
   }
 
+  // --- API ROUTE: Download Native Android APK ---
+  if ((url.pathname === '/aegis.apk' || url.pathname === '/download/aegis.apk') && req.method === 'GET') {
+    const apkPath = path.join(__dirname, 'AegisProtocol.apk')
+    if (fs.existsSync(apkPath)) {
+      const stat = fs.statSync(apkPath)
+      res.writeHead(200, {
+        'Content-Type': 'application/vnd.android.package-archive',
+        'Content-Length': stat.size,
+        'Content-Disposition': 'attachment; filename="AegisProtocol.apk"',
+        'Cache-Control': 'no-cache'
+      })
+      fs.createReadStream(apkPath).pipe(res)
+      return
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/plain' })
+      res.end('APK not found on server')
+      return
+    }
+  }
+
   // --- API ROUTE: Get Access Packages ---
   if (url.pathname === '/api/packages' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -1414,6 +1434,23 @@ echo "🎉 Router $ROUTER_NAME successfully joined the Aegis Unified Mesh Channe
         </div>
       </div>
 
+      <!-- Native Android App Download Card -->
+      <div class="glass-card" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(16, 185, 129, 0.08)); border-color: rgba(6, 182, 212, 0.4); margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 200px;">
+            <div style="font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
+              <span>📱</span> Aegis Native Android App (1-Click VPN)
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
+              Direct tun0 virtual adapter routing 100% of phone apps through Cloud & Laptop broadband mesh. Zero external apps needed.
+            </div>
+          </div>
+          <a href="/aegis.apk" class="btn-primary" style="width: auto; padding: 10px 18px; font-size: 12px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.35);">
+            ⬇️ Download APK (4.5 MB)
+          </a>
+        </div>
+      </div>
+
       <!-- Passes & Connection Launcher -->
       <div id="packagesCard" class="glass-card">
         <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">
@@ -1626,6 +1663,11 @@ echo "🎉 Router $ROUTER_NAME successfully joined the Aegis Unified Mesh Channe
       btn.innerText = 'Engaging Noise Shield...';
       btn.disabled = true;
 
+      // If running inside Aegis Native Android App, engage native system tun0 VPN
+      if (window.AndroidAegis && window.AndroidAegis.connectVpn) {
+        window.AndroidAegis.connectVpn();
+      }
+
       try {
         const res = await fetch('/api/connect', {
           method: 'POST',
@@ -1638,7 +1680,7 @@ echo "🎉 Router $ROUTER_NAME successfully joined the Aegis Unified Mesh Channe
         }
       } catch (err) {
         saveSession({
-          blindedIp: '100.64.48.19 [Cloaked]',
+          blindedIp: '10.66.66.2 [Aegis Native Mesh]',
           expiresAt: Date.now() + selectedDuration * 60 * 1000
         });
       }
@@ -1696,7 +1738,30 @@ echo "🎉 Router $ROUTER_NAME successfully joined the Aegis Unified Mesh Channe
       const btn = document.getElementById('btnConnect');
       btn.innerText = 'Connect to Anonymous Internet';
       btn.disabled = false;
+
+      // If running inside Aegis Native Android App, stop native VPN
+      if (window.AndroidAegis && window.AndroidAegis.disconnectVpn) {
+        window.AndroidAegis.disconnectVpn();
+      }
     }
+
+    // Native Android VPN Status Callback
+    window.onAegisVpnStatusChanged = function(connected) {
+      if (connected) {
+        saveSession({
+          blindedIp: '10.66.66.2 [Aegis Mesh Direct]',
+          expiresAt: Date.now() + 24 * 60 * 60 * 1000
+        });
+      } else {
+        if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+        localStorage.removeItem('aegis_session');
+        document.getElementById('activeSessionBox').style.display = 'none';
+        document.getElementById('packagesCard').style.display = 'block';
+        const btn = document.getElementById('btnConnect');
+        btn.innerText = 'Connect to Anonymous Internet';
+        btn.disabled = false;
+      }
+    };
 
     async function redeemVoucher() {
       const code = document.getElementById('voucherCodeInput').value.trim();
