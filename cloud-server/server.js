@@ -638,7 +638,7 @@ const server = http.createServer((req, res) => {
         <div class="telemetry-grid">
           <div class="telemetry-item">
             <div class="telemetry-label">Cloud Relay Node</div>
-            <div class="telemetry-val" style="font-size: 11px;">172.209.217.140:3888</div>
+            <div class="telemetry-val" style="font-size: 11px;">172-209-217-140.sslip.io (SSL)</div>
           </div>
           <div class="telemetry-item">
             <div class="telemetry-label">Live Ping</div>
