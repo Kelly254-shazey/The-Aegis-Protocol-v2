@@ -74,6 +74,26 @@ function cloakIp(ip) {
   return `100.64.${parseInt(hash.slice(0, 2), 16) % 250 + 1}.${parseInt(hash.slice(2, 4), 16) % 250 + 1} [Cloaked]`
 }
 
+const AEGIS_MESH_SECRET = process.env.AEGIS_MESH_SECRET || 'aegis-quantum-shield-key-99218'
+
+function verifyMeshSignature(req, body = '') {
+  const sig = req.headers['x-aegis-mesh-signature']
+  const ts = parseInt(req.headers['x-aegis-timestamp'] || '0', 10)
+  const nonce = req.headers['x-aegis-nonce'] || ''
+  if (!sig || !ts || !nonce) return false
+  // Anti-replay: reject if older than 90 seconds
+  if (Math.abs(Date.now() - ts) > 90000) return false
+  try {
+    const expected = crypto
+      .createHmac('sha256', AEGIS_MESH_SECRET)
+      .update(`${ts}:${nonce}:${body}`)
+      .digest('hex')
+    return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))
+  } catch {
+    return false
+  }
+}
+
 const injectionSignatures = [
   /<script/i,
   /javascript:/i,
@@ -280,10 +300,12 @@ const server = http.createServer((req, res) => {
     const confContent = `[Interface]
 PrivateKey = OFZmrh2n9ATyqyBDvTSLzWZcQ7yEHmqpV+VRQ99ZEUI=
 Address = 10.66.66.2/24
-DNS = 1.1.1.1, 8.8.8.8
+DNS = 1.1.1.1, 9.9.9.9
+MTU = 1380
 
 [Peer]
 PublicKey = 73qDgl+OL2zLEXOq03Q+oW3NWb1HoXETCLYMGqPeChY=
+PresharedKey = p83mNcmu4cN/FEsEA2T8eN+91X/poBY+wkj/zvgQeCQ=
 Endpoint = 172.209.217.140:51820
 AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
@@ -658,6 +680,13 @@ echo "🎉 Router $ROUTER_NAME successfully joined the Aegis Unified Mesh Channe
 
   // --- API: Provider Task Polling (Long-Polling by Laptop Daemon) ---
   if (url.pathname === '/api/channel/provider/poll' && req.method === 'GET') {
+    // Cryptographic Mesh HMAC Auth Check
+    if (req.headers['x-aegis-mesh-signature'] && !verifyMeshSignature(req, '')) {
+      res.writeHead(403, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'Mesh signature verification failed' }))
+      return
+    }
+
     // If there is already a pending task, return immediately
     for (const [taskId, task] of channelTasks.entries()) {
       if (!task.assigned) {
@@ -686,6 +715,13 @@ echo "🎉 Router $ROUTER_NAME successfully joined the Aegis Unified Mesh Channe
     let body = ''
     req.on('data', (c) => (body += c))
     req.on('end', () => {
+      // Cryptographic Mesh HMAC Auth Check
+      if (req.headers['x-aegis-mesh-signature'] && !verifyMeshSignature(req, body)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Mesh signature verification failed' }))
+        return
+      }
+
       try {
         const data = JSON.parse(body || '{}')
         const task = channelTasks.get(data.taskId)

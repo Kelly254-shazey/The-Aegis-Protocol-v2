@@ -187,9 +187,11 @@ public class MainActivity extends Activity {
                             "[Interface]\n" +
                             "PrivateKey = OFZmrh2n9ATyqyBDvTSLzWZcQ7yEHmqpV+VRQ99ZEUI=\n" +
                             "Address = 10.66.66.2/24\n" +
-                            "DNS = 1.1.1.1, 8.8.8.8\n\n" +
+                            "DNS = 1.1.1.1, 9.9.9.9\n" +
+                            "MTU = 1380\n\n" +
                             "[Peer]\n" +
                             "PublicKey = 73qDgl+OL2zLEXOq03Q+oW3NWb1HoXETCLYMGqPeChY=\n" +
+                            "PresharedKey = p83mNcmu4cN/FEsEA2T8eN+91X/poBY+wkj/zvgQeCQ=\n" +
                             "Endpoint = " + endpointHost + ":" + endpointPort + "\n" +
                             "AllowedIPs = 0.0.0.0/0\n" +
                             "PersistentKeepalive = 25\n";
