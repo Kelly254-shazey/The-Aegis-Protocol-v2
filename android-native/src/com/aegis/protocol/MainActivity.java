@@ -26,6 +26,12 @@ import com.wireguard.android.backend.GoBackend;
 import com.wireguard.android.backend.Tunnel;
 import com.wireguard.config.Config;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -33,6 +39,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 
 public class MainActivity extends Activity {
     private static final String TAG = "AegisMainActivity";
@@ -180,21 +188,68 @@ public class MainActivity extends Activity {
                         mBackend = new GoBackend(MainActivity.this);
                     }
 
-                    String endpointHost = getSavedHost();
-                    int endpointPort = getSavedPort();
+                    final String endpointHost = getSavedHost();
+                    final int endpointPort = getSavedPort();
 
-                    String wgConfigString =
-                            "[Interface]\n" +
-                            "PrivateKey = OFZmrh2n9ATyqyBDvTSLzWZcQ7yEHmqpV+VRQ99ZEUI=\n" +
-                            "Address = 10.66.66.2/24\n" +
-                            "DNS = 1.1.1.1, 9.9.9.9\n" +
-                            "MTU = 1380\n\n" +
-                            "[Peer]\n" +
-                            "PublicKey = 73qDgl+OL2zLEXOq03Q+oW3NWb1HoXETCLYMGqPeChY=\n" +
-                            "PresharedKey = p83mNcmu4cN/FEsEA2T8eN+91X/poBY+wkj/zvgQeCQ=\n" +
-                            "Endpoint = " + endpointHost + ":" + endpointPort + "\n" +
-                            "AllowedIPs = 0.0.0.0/0\n" +
-                            "PersistentKeepalive = 25\n";
+                    String wgConfigString = null;
+                    try {
+                        String cleanHost = endpointHost.replaceFirst("^https?://", "");
+                        String schemeHost = cleanHost.contains(":") ? cleanHost.split(":")[0] : cleanHost;
+                        String syncUrl = "https://" + schemeHost.replaceAll("\\.", "-") + ".sslip.io/api/tunnel/wireguard.conf";
+                        URL url = new URL(syncUrl);
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setConnectTimeout(2500);
+                        conn.setReadTimeout(2500);
+                        if (conn instanceof HttpsURLConnection) {
+                            TrustManager[] trustAll = new TrustManager[]{
+                                new X509TrustManager() {
+                                    public X509Certificate[] getAcceptedIssuers() { return null; }
+                                    public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                                    public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                                }
+                            };
+                            SSLContext sc = SSLContext.getInstance("TLS");
+                            sc.init(null, trustAll, new SecureRandom());
+                            ((HttpsURLConnection) conn).setSSLSocketFactory(sc.getSocketFactory());
+                            ((HttpsURLConnection) conn).setHostnameVerifier(new HostnameVerifier() {
+                                public boolean verify(String hostname, SSLSession session) { return true; }
+                            });
+                        }
+                        if (conn.getResponseCode() == 200) {
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                            StringBuilder sb = new StringBuilder();
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                sb.append(line).append("\n");
+                            }
+                            reader.close();
+                            String fetched = sb.toString();
+                            if (fetched.contains("[Interface]") && fetched.contains("[Peer]")) {
+                                wgConfigString = fetched;
+                                Log.i(TAG, "WireGuard config synced directly from Cloud Relay.");
+                            }
+                        }
+                    } catch (Exception syncErr) {
+                        Log.i(TAG, "Direct cloud sync bypassed (using embedded profile): " + syncErr.getMessage());
+                    }
+
+                    if (wgConfigString == null) {
+                        wgConfigString =
+                                "[Interface]\n" +
+                                "PrivateKey = OFZmrh2n9ATyqyBDvTSLzWZcQ7yEHmqpV+VRQ99ZEUI=\n" +
+                                "Address = 10.66.66.2/24\n" +
+                                "DNS = 1.1.1.1, 9.9.9.9\n" +
+                                "MTU = 1380\n\n" +
+                                "[Peer]\n" +
+                                "PublicKey = 73qDgl+OL2zLEXOq03Q+oW3NWb1HoXETCLYMGqPeChY=\n" +
+                                "PresharedKey = p83mNcmu4cN/FEsEA2T8eN+91X/poBY+wkj/zvgQeCQ=\n" +
+                                "Endpoint = " + endpointHost + ":" + endpointPort + "\n" +
+                                "AllowedIPs = 0.0.0.0/0\n" +
+                                "PersistentKeepalive = 25\n";
+                    } else if (wgConfigString.contains("Endpoint =")) {
+                        // Ensure endpoint reflects user-saved host & port
+                        wgConfigString = wgConfigString.replaceAll("Endpoint = [^\n]+", "Endpoint = " + endpointHost + ":" + endpointPort);
+                    }
 
                     InputStream is = new ByteArrayInputStream(wgConfigString.getBytes(StandardCharsets.UTF_8));
                     Config config = Config.parse(is);
