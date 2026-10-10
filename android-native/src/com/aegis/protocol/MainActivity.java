@@ -26,6 +26,9 @@ import com.wireguard.android.backend.GoBackend;
 import com.wireguard.android.backend.Tunnel;
 import com.wireguard.config.Config;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -51,6 +54,7 @@ public class MainActivity extends Activity {
 
     private WebView mWebView;
     private Backend mBackend;
+    private AegisMeshRouter mMeshRouter;
     private final Tunnel mTunnel = new AegisTunnel("aegis0");
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
     private boolean mIsConnected = false;
@@ -79,6 +83,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         mPrefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        mMeshRouter = new AegisMeshRouter(this);
 
         // Immersive Dark Theme Window
         Window window = getWindow();
@@ -414,6 +419,126 @@ public class MainActivity extends Activity {
                 }
             }).start();
         }
+
+        @JavascriptInterface
+        public boolean startMeshRouter(final int port) {
+            if (mMeshRouter == null) return false;
+            final int p = port > 0 ? port : 8080;
+            boolean ok = mMeshRouter.start(p);
+            if (ok) {
+                mMainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this, "📡 Aegis Hotspot AP Router Active on port " + p, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+            return ok;
+        }
+
+        @JavascriptInterface
+        public boolean stopMeshRouter() {
+            if (mMeshRouter == null) return false;
+            mMeshRouter.stop();
+            mMainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(MainActivity.this, "Aegis Hotspot Router Stopped", Toast.LENGTH_SHORT).show();
+                }
+            });
+            return true;
+        }
+
+        @JavascriptInterface
+        public boolean isMeshRouterRunning() {
+            return mMeshRouter != null && mMeshRouter.isRunning();
+        }
+
+        @JavascriptInterface
+        public String getMeshRouterInfo() {
+            try {
+                JSONObject obj = new JSONObject();
+                boolean running = mMeshRouter != null && mMeshRouter.isRunning();
+                obj.put("running", running);
+                obj.put("gatewayIp", mMeshRouter != null ? mMeshRouter.getGatewayIp() : "192.168.43.1");
+                obj.put("port", mMeshRouter != null ? mMeshRouter.getPort() : 8080);
+                obj.put("policyMode", mMeshRouter != null ? mMeshRouter.getPolicyMode().name() : "OPEN");
+                obj.put("isVpnConnected", mIsConnected);
+                return obj.toString();
+            } catch (Exception e) {
+                return "{\"running\":false}";
+            }
+        }
+
+        @JavascriptInterface
+        public String getConnectedClients() {
+            if (mMeshRouter == null) return "[]";
+            return mMeshRouter.getConnectedClientsJson().toString();
+        }
+
+        @JavascriptInterface
+        public boolean setClientAuthorized(String ip, boolean authorized, long dataLimitMb, long durationMinutes) {
+            if (mMeshRouter == null) return false;
+            long limitBytes = dataLimitMb > 0 ? (dataLimitMb * 1024L * 1024L) : 0L;
+            return mMeshRouter.setClientAuthorized(ip, authorized, limitBytes, durationMinutes);
+        }
+
+        @JavascriptInterface
+        public boolean kickClient(String ip) {
+            if (mMeshRouter == null) return false;
+            return mMeshRouter.kickClient(ip);
+        }
+
+        @JavascriptInterface
+        public boolean setRouterPolicy(String mode) {
+            if (mMeshRouter == null) return false;
+            if ("voucher".equalsIgnoreCase(mode)) {
+                mMeshRouter.setPolicyMode(AegisMeshRouter.PolicyMode.VOUCHER);
+            } else if ("approval".equalsIgnoreCase(mode)) {
+                mMeshRouter.setPolicyMode(AegisMeshRouter.PolicyMode.APPROVAL);
+            } else {
+                mMeshRouter.setPolicyMode(AegisMeshRouter.PolicyMode.OPEN);
+            }
+            return true;
+        }
+
+        @JavascriptInterface
+        public String generateLocalVoucher(long durationMinutes) {
+            if (mMeshRouter == null) return "";
+            return mMeshRouter.generateVoucher(durationMinutes);
+        }
+
+        @JavascriptInterface
+        public void openHotspotSettings() {
+            mMainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Intent intent = new Intent();
+                        intent.setClassName("com.android.settings", "com.android.settings.TetherSettings");
+                        startActivity(intent);
+                    } catch (Exception e1) {
+                        try {
+                            Intent intent = new Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS);
+                            startActivity(intent);
+                        } catch (Exception e2) {
+                            try {
+                                Intent intent = new Intent(android.provider.Settings.ACTION_SETTINGS);
+                                startActivity(intent);
+                            } catch (Exception ignored) {}
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mMeshRouter != null) {
+            mMeshRouter.stop();
+        }
+        super.onDestroy();
     }
 
     @Override

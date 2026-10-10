@@ -36,7 +36,7 @@
         radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.08) 0%, transparent 60%);
       color: var(--text-main);
       min-height: 100vh;
-      padding: 20px 16px 36px;
+      padding: 16px 14px 36px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -44,11 +44,11 @@
 
     .header {
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
 
     .brand {
@@ -91,6 +91,56 @@
       cursor: pointer;
     }
 
+    /* Tabs Navigation */
+    .nav-tabs {
+      display: flex;
+      width: 100%;
+      max-width: 440px;
+      background: rgba(13, 22, 45, 0.6);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 4px;
+      margin-bottom: 20px;
+      gap: 6px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.25s ease;
+    }
+
+    .tab-btn.active {
+      background: rgba(6, 182, 212, 0.2);
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      color: #fff;
+      box-shadow: 0 0 10px var(--cyan-glow);
+    }
+
+    .tab-content {
+      width: 100%;
+      max-width: 440px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
+
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -100,7 +150,7 @@
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.03em;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       transition: all 0.3s ease;
       background: rgba(148, 163, 184, 0.1);
       border: 1px solid rgba(148, 163, 184, 0.25);
@@ -118,7 +168,6 @@
       background: rgba(245, 158, 11, 0.15);
       border-color: rgba(245, 158, 11, 0.4);
       color: #fbbf24;
-      box-shadow: 0 0 14px rgba(245, 158, 11, 0.3);
     }
 
     .status-dot {
@@ -128,32 +177,24 @@
       background: currentColor;
     }
 
-    /* Giant Shield Power Button */
+    /* Circular Shield Launcher */
     .shield-launcher {
       position: relative;
-      width: 190px;
-      height: 190px;
-      margin: 10px 0 28px;
+      width: 210px;
+      height: 210px;
+      margin: 10px 0 24px;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
     }
 
     .outer-pulse-ring {
       position: absolute;
-      inset: -12px;
+      inset: -8px;
       border-radius: 50%;
       border: 2px dashed rgba(6, 182, 212, 0.3);
       animation: rotateRing 20s linear infinite;
-      transition: all 0.5s ease;
-    }
-
-    .shield-launcher.connected .outer-pulse-ring {
-      border-color: rgba(16, 185, 129, 0.5);
-      border-style: solid;
-      box-shadow: 0 0 30px var(--green-glow);
-      animation: pulseGlow 2s ease-in-out infinite;
     }
 
     @keyframes rotateRing {
@@ -161,74 +202,78 @@
       100% { transform: rotate(360deg); }
     }
 
+    .shield-launcher.connected .outer-pulse-ring {
+      border: 2px solid rgba(16, 185, 129, 0.6);
+      box-shadow: 0 0 25px var(--green-glow);
+      animation: pulseGlow 2.5s ease-in-out infinite;
+    }
+
     @keyframes pulseGlow {
-      0%, 100% { transform: scale(1); opacity: 0.8; }
-      50% { transform: scale(1.05); opacity: 1; }
+      0%, 100% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.04); opacity: 1; }
     }
 
     .power-btn {
-      width: 160px;
-      height: 160px;
+      width: 190px;
+      height: 190px;
       border-radius: 50%;
-      background: linear-gradient(145deg, #0e1e3e, #071126);
-      border: 3px solid var(--cyan);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px var(--cyan-glow);
+      background: radial-gradient(circle at 30% 30%, #172a54 0%, #071024 75%);
+      border: 3px solid rgba(6, 182, 212, 0.5);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(6, 182, 212, 0.2);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+    .shield-launcher:active .power-btn {
+      transform: scale(0.95);
+    }
+
     .shield-launcher.connected .power-btn {
-      border-color: var(--green);
-      background: linear-gradient(145deg, #063124, #031c14);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 25px var(--green-glow);
+      background: radial-gradient(circle at 30% 30%, #0f3d32 0%, #061914 75%);
+      border-color: #10b981;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 35px var(--green-glow), inset 0 0 25px rgba(16, 185, 129, 0.3);
     }
 
     .power-icon {
-      font-size: 42px;
-      transition: transform 0.3s;
-    }
-
-    .shield-launcher:active .power-btn {
-      transform: scale(0.94);
+      font-size: 44px;
+      margin-bottom: 6px;
+      transition: transform 0.3s ease;
     }
 
     .power-btn-text {
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 800;
       letter-spacing: 0.08em;
-      text-transform: uppercase;
       color: #fff;
     }
 
     .power-btn-sub {
       font-size: 10px;
       color: var(--text-muted);
-      font-weight: 500;
+      letter-spacing: 0.04em;
+      margin-top: 2px;
     }
 
     /* Cards */
     .card {
       width: 100%;
-      max-width: 420px;
       background: var(--bg-card);
       border: 1px solid var(--border-card);
-      backdrop-filter: blur(12px);
       border-radius: 16px;
-      padding: 16px 18px;
+      padding: 16px;
       margin-bottom: 14px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      backdrop-filter: blur(10px);
     }
 
     .card-title {
       font-size: 12px;
       font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--cyan);
       margin-bottom: 12px;
       display: flex;
       align-items: center;
@@ -238,43 +283,44 @@
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 10px;
     }
 
     .stat-box {
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
       padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.04);
     }
 
     .stat-label {
       font-size: 10.5px;
       color: var(--text-muted);
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
 
     .stat-value {
       font-size: 13px;
       font-weight: 700;
-      color: #fff;
       font-family: 'JetBrains Mono', monospace;
-      white-space: nowrap;
+      color: #fff;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .stat-value.green { color: #34d399; }
-    .stat-value.cyan { color: #38bdf8; }
+    .stat-value.cyan { color: var(--cyan); }
+    .stat-value.green { color: var(--green); }
+    .stat-value.amber { color: var(--amber); }
 
     /* Action Buttons */
-    .action-btn {
+    .btn-action {
       width: 100%;
-      background: rgba(6, 182, 212, 0.12);
-      border: 1px solid rgba(6, 182, 212, 0.35);
-      color: #38bdf8;
-      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(6, 182, 212, 0.08) 100%);
+      border: 1px solid rgba(6, 182, 212, 0.5);
+      color: var(--cyan);
       padding: 12px;
+      border-radius: 12px;
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
@@ -282,24 +328,211 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
+      margin-top: 8px;
     }
 
-    .action-btn:active {
-      transform: scale(0.98);
-      background: rgba(6, 182, 212, 0.25);
+    .btn-action:hover {
+      background: rgba(6, 182, 212, 0.28);
+      border-color: var(--cyan);
+      box-shadow: 0 0 15px var(--cyan-glow);
     }
 
-    .test-result-box {
+    .btn-action.green {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.08) 100%);
+      border-color: rgba(16, 185, 129, 0.5);
+      color: var(--green);
+    }
+
+    .btn-action.red {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #f87171;
+    }
+
+    .result-box {
       margin-top: 10px;
-      padding: 10px 12px;
+      padding: 12px;
+      border-radius: 10px;
       background: rgba(0,0,0,0.5);
-      border-radius: 8px;
-      font-family: monospace;
+      border: 1px solid rgba(255,255,255,0.06);
+      font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
+      line-height: 1.5;
       color: #34d399;
       display: none;
       word-break: break-all;
+    }
+
+    /* Hotspot Router Styles */
+    .router-hero {
+      background: radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.12) 0%, rgba(13, 22, 45, 0.8) 100%);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      padding: 18px;
+      width: 100%;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .router-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .router-badge.active {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+
+    .router-badge.inactive {
+      background: rgba(148, 163, 184, 0.1);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      color: var(--text-muted);
+    }
+
+    .router-ip-display {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 4px;
+    }
+
+    .router-sub-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .router-actions-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+    }
+
+    /* Policy Radio Group */
+    .policy-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin: 8px 0;
+    }
+
+    .policy-chip {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border-card);
+      border-radius: 10px;
+      padding: 8px 6px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+    }
+
+    .policy-chip.selected {
+      background: rgba(6, 182, 212, 0.25);
+      border-color: var(--cyan);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    /* Devices List */
+    .devices-table {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .device-card {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .device-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .device-ip {
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .device-tag {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+
+    .device-tag.allowed {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .device-tag.blocked {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .device-metrics {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .device-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .btn-device-action {
+      flex: 1;
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-device-action.kick {
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #f87171;
     }
 
     /* Modal */
@@ -321,7 +554,7 @@
       border-radius: 18px;
       padding: 22px;
       width: 100%;
-      max-width: 360px;
+      max-width: 380px;
     }
 
     .modal-title {
@@ -357,10 +590,6 @@
       outline: none;
     }
 
-    .input-field:focus {
-      border-color: var(--cyan);
-    }
-
     .modal-actions {
       display: flex;
       gap: 10px;
@@ -390,14 +619,6 @@
       font-size: 13px;
       cursor: pointer;
     }
-
-    .footer-note {
-      font-size: 11px;
-      color: rgba(148, 163, 184, 0.6);
-      text-align: center;
-      margin-top: 8px;
-      max-width: 380px;
-    }
   </style>
 </head>
 <body>
@@ -416,86 +637,182 @@
     </div>
   </div>
 
-  <!-- Status Badge -->
-  <div id="statusBadge" class="status-badge">
-    <div class="status-dot"></div>
-    <span id="statusBadgeText">STANDBY (0 IP LEAK)</span>
-  </div>
-
-  <!-- Large Interactive Tactile Shield Button -->
-  <div id="shieldLauncher" class="shield-launcher" onclick="toggleVpnConnection()">
-    <div class="outer-pulse-ring"></div>
-    <div class="power-btn">
-      <div id="powerIcon" class="power-icon">🛡️</div>
-      <div id="powerBtnText" class="power-btn-text">CONNECT</div>
-      <div id="powerBtnSub" class="power-btn-sub">1-Click Tunnel</div>
-    </div>
-  </div>
-
-  <!-- Live Telemetry Card -->
-  <div class="card">
-    <div class="card-title">
-      <span>🔒 Live Encrypted Tunnel</span>
-      <span style="font-size: 10px; color: var(--green);">● HARDWARE ACCELERATED</span>
-    </div>
-    <div class="grid-2">
-      <div class="stat-box">
-        <div class="stat-label">Virtual Adapter</div>
-        <div class="stat-value cyan" id="statAdapter">tun0 (MTU 1380)</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Blinded Mesh IP</div>
-        <div class="stat-value green" id="statMeshIp">10.66.66.2</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Encryption Suite</div>
-        <div class="stat-value" style="font-size: 11.5px; color: var(--cyan);">Noise_IK + 256-bit PSK</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">DNS Leak Guard</div>
-        <div class="stat-value green" style="font-size: 11.5px;">Quad9 + Cloudflare</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Ingress Relay Mesh Fleet Card -->
-  <div class="card">
-    <div class="card-title">
-      <span>🌐 Ingress Gateway Fleet</span>
-      <span style="font-size: 10px; color: var(--cyan);" id="statEndpointLabel">AZURE RELAY</span>
-    </div>
-    <div class="grid-2">
-      <div class="stat-box">
-        <div class="stat-label">Cloud Relay Server</div>
-        <div class="stat-value" id="statEndpoint">172.209.217.140:51820</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Aggregated Pool</div>
-        <div class="stat-value green">250 Mbps Combined</div>
-      </div>
-    </div>
-    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 10px; line-height: 1.4;">
-      ⚡ Physical broadband streamed from LaptopNet + Hardware Routers pooled in the Azure Cloud.
-    </div>
-  </div>
-
-  <!-- Ingress Live Pipeline Test Card -->
-  <div class="card">
-    <button class="action-btn" onclick="testPipeline()">
-      <span>⚡ Test Ingress Pipeline (Laptop Broadband)</span>
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <button id="tabShieldBtn" class="tab-btn active" onclick="switchTab('shield')">
+      🛡️ MESH SHIELD
     </button>
-    <div id="testResultBox" class="test-result-box"></div>
+    <button id="tabRouterBtn" class="tab-btn" onclick="switchTab('router')">
+      📡 HOTSPOT AP ROUTER
+    </button>
   </div>
 
-  <div class="footer-note">
-    🛡️ Enforced 0 IP Leak. Routes all device traffic (Chrome, YouTube, WhatsApp) directly through the Aegis Mesh.
+  <!-- ========================================== -->
+  <!-- TAB 1: MESH SHIELD (VPN TUNNEL CONTROLLER) -->
+  <!-- ========================================== -->
+  <div id="tabShield" class="tab-content active">
+
+    <!-- Status Badge -->
+    <div id="statusBadge" class="status-badge">
+      <div class="status-dot"></div>
+      <span id="statusBadgeText">STANDBY (0 IP LEAK)</span>
+    </div>
+
+    <!-- Interactive Power Button -->
+    <div id="shieldLauncher" class="shield-launcher" onclick="toggleVpnConnection()">
+      <div class="outer-pulse-ring"></div>
+      <div class="power-btn">
+        <div id="powerIcon" class="power-icon">🛡️</div>
+        <div id="powerBtnText" class="power-btn-text">CONNECT</div>
+        <div id="powerBtnSub" class="power-btn-sub">1-Click Tunnel</div>
+      </div>
+    </div>
+
+    <!-- Live Telemetry Card -->
+    <div class="card">
+      <div class="card-title">
+        <span>🔒 Live Encrypted Tunnel</span>
+        <span style="font-size: 10px; color: var(--green);">● HARDWARE ACCELERATED</span>
+      </div>
+      <div class="grid-2">
+        <div class="stat-box">
+          <div class="stat-label">Virtual Adapter</div>
+          <div class="stat-value cyan" id="statAdapter">tun0 (MTU 1380)</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Blinded Mesh IP</div>
+          <div class="stat-value green" id="statMeshIp">10.66.66.2</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Cloud Relay</div>
+          <div class="stat-value" id="statEndpoint">172.209.217.140:51820</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Tunnel Uptime</div>
+          <div class="stat-value amber" id="statTimer">00:00:00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security Attributes Card -->
+    <div class="card">
+      <div class="card-title">
+        <span>🛡️ Active Defensive Countermeasures</span>
+      </div>
+      <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.8;">
+        <div>● <b style="color: #fff;">Quantum Shield:</b> Noise_IK + 256-bit PSK</div>
+        <div>● <b style="color: #fff;">DNS Security:</b> Quad9 (9.9.9.9) + Cloudflare (1.1.1.1)</div>
+        <div>● <b style="color: #fff;">Client Isolation:</b> Lateral Peer Ingress Blocked</div>
+        <div>● <b style="color: #fff;">Anti-Spoofing:</b> Strict Reverse Path Filtering</div>
+      </div>
+    </div>
+
+    <!-- Ingress Test Card -->
+    <div class="card">
+      <div class="card-title">
+        <span>⚡ Ingress Pipeline Verification</span>
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+        Verifies end-to-end routing through Cloud Relay and Broadband Provider:
+      </div>
+      <button class="btn-action" onclick="testPipeline()">
+        <span>🚀</span> TEST INGRESS PIPELINE
+      </button>
+      <div id="testResultBox" class="result-box"></div>
+    </div>
+
   </div>
 
-  <!-- Settings Modal (Allows Changing Cloud IP) -->
+  <!-- ============================================== -->
+  <!-- TAB 2: HOTSPOT AP ROUTER (SHARING & MANAGEMENT) -->
+  <!-- ============================================== -->
+  <div id="tabRouter" class="tab-content">
+
+    <!-- Router Hero Status Card -->
+    <div class="router-hero">
+      <div id="routerStatusBadge" class="router-badge inactive">
+        <div class="status-dot"></div>
+        <span id="routerStatusText">ROUTER STANDBY</span>
+      </div>
+      <div id="routerIpDisplay" class="router-ip-display">192.168.43.1:8080</div>
+      <div class="router-sub-label">Mobile Hotspot Gateway (All Clients Routed via tun0)</div>
+
+      <div class="router-actions-grid">
+        <button id="btnToggleRouter" class="btn-action green" onclick="toggleMeshRouter()">
+          <span>📡</span> <span id="btnToggleRouterText">START ROUTER</span>
+        </button>
+        <button class="btn-action" onclick="openHotspotSettings()">
+          <span>⚙️</span> HOTSPOT SETTINGS
+        </button>
+      </div>
+    </div>
+
+    <!-- Instructions / Connection Helper Card -->
+    <div class="card">
+      <div class="card-title">
+        <span>📱 How Friends & Laptops Connect</span>
+        <span style="font-size: 10px; color: var(--cyan); cursor: pointer;" onclick="openInstructionsModal()">[ INSTRUCTIONS ]</span>
+      </div>
+      <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.7;">
+        <div><b>1.</b> Friends connect to your phone's <b>Wi-Fi Hotspot</b>.</div>
+        <div><b>2.</b> Set Proxy: <b style="color: var(--cyan);" id="guideProxyHost">192.168.43.1</b> : <b style="color: var(--cyan);">8080</b> (or Auto PAC: <span style="color:#93c5fd;">/proxy.pac</span>).</div>
+        <div><b>3.</b> Or in the <b>Aegis App</b>: Enable <i>"Route via Friend's AP"</i>.</div>
+      </div>
+    </div>
+
+    <!-- Monetization & Access Policy Card -->
+    <div class="card">
+      <div class="card-title">
+        <span>💳 Access Control & Monetization</span>
+      </div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">
+        Choose how connected friends access your Aegis tunnel:
+      </div>
+      <div class="policy-selector">
+        <div id="policyOpen" class="policy-chip selected" onclick="setPolicy('OPEN')">
+          🟢 Open Share
+        </div>
+        <div id="policyApproval" class="policy-chip" onclick="setPolicy('APPROVAL')">
+          🟡 Host Approval
+        </div>
+        <div id="policyVoucher" class="policy-chip" onclick="setPolicy('VOUCHER')">
+          🔵 Voucher Pass
+        </div>
+      </div>
+
+      <!-- Quick Voucher Generator (Pay-as-you-use) -->
+      <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">Generate Pass for Friends:</div>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn-device-action" onclick="generateVoucher(30)">+ 30 Min</button>
+          <button class="btn-device-action" onclick="generateVoucher(60)">+ 1 Hour</button>
+          <button class="btn-device-action" onclick="generateVoucher(1440)">+ 24 Hours</button>
+        </div>
+        <div id="voucherResultBox" style="display: none; margin-top: 8px; background: rgba(0,0,0,0.5); padding: 8px 10px; border-radius: 8px; font-family: monospace; font-size: 12px; color: var(--cyan); text-align: center;"></div>
+      </div>
+    </div>
+
+    <!-- Live Connected Devices Manager -->
+    <div class="card">
+      <div class="card-title">
+        <span>💻 Connected Devices (<span id="clientCount">0</span>)</span>
+        <button class="btn-device-action" style="padding: 2px 8px;" onclick="refreshConnectedDevices()">↻ REFRESH</button>
+      </div>
+
+      <div id="devicesContainer" class="devices-table">
+        <div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 14px 0;">
+          No devices connected yet.<br/>Turn on Hotspot and have friends connect!
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Settings Modal -->
   <div id="settingsModal" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-title">
-        <span>⚙️</span> Relay Endpoint Configuration
+        <span>⚙️</span> Aegis Protocol Configuration
       </div>
       <div class="input-group">
         <label class="input-label">Cloud Relay IP or Hostname:</label>
@@ -505,9 +822,38 @@
         <label class="input-label">WireGuard UDP Port:</label>
         <input id="inputRelayPort" class="input-field" type="number" placeholder="51820" />
       </div>
+      <div class="input-group" style="padding: 10px; background: rgba(0,0,0,0.4); border-radius: 10px; border: 1px solid var(--border-card);">
+        <label class="input-label" style="display: flex; align-items: center; gap: 8px; color: #fff; cursor: pointer;">
+          <input type="checkbox" id="checkFriendHotspot" style="accent-color: var(--cyan); width: 16px; height: 16px;" onchange="onToggleFriendHotspot()" />
+          <span>Route via Friend's Aegis AP</span>
+        </label>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+          Enable when connected to a friend's phone running Aegis Hotspot AP (192.168.43.1:8080).
+        </div>
+      </div>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeSettingsModal()">Cancel</button>
         <button class="btn-save" onclick="saveRelaySettings()">Save & Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connection Instructions Modal -->
+  <div id="instructionsModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-title">
+        <span>📡</span> Connect Laptops & Friends
+      </div>
+      <div style="font-size: 12px; color: #e2e8f0; line-height: 1.7; margin-bottom: 16px;">
+        <p><b>Step 1: Wi-Fi Hotspot</b><br/>Turn on your phone's Personal Hotspot. Have your friend or laptop connect to it.</p>
+        <p style="margin-top: 8px;"><b>Step 2: Proxy Setup</b><br/>In your laptop or friend's phone Wi-Fi settings:<br/>
+        • <b>Proxy:</b> Manual<br/>
+        • <b>Host:</b> <span id="modalProxyHost" style="color:var(--cyan); font-family:monospace;">192.168.43.1</span><br/>
+        • <b>Port:</b> <span style="color:var(--cyan); font-family:monospace;">8080</span></p>
+        <p style="margin-top: 8px;"><b>Step 3: Tunnel Protection</b><br/>All traffic is encrypted and sent through your phone's active Aegis tunnel directly to the Cloud Relay!</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save" onclick="closeInstructionsModal()">Got It</button>
       </div>
     </div>
   </div>
@@ -517,8 +863,10 @@
     let isConnecting = false;
     let sessionSeconds = 0;
     let timerInterval = null;
+    let routerRefreshInterval = null;
+    let currentGatewayIp = '192.168.43.1';
+    let currentRouterPort = 8080;
 
-    // Load initial status from Android Bridge
     window.addEventListener('DOMContentLoaded', () => {
       initApp();
     });
@@ -532,12 +880,34 @@
           }
           const connected = window.AndroidAegis.isVpnConnected();
           setConnectedState(connected);
+          refreshRouterStatus();
         } catch (e) {
           console.error(e);
         }
       }
     }
 
+    /* Tab Switching */
+    function switchTab(tab) {
+      document.getElementById('tabShieldBtn').classList.toggle('active', tab === 'shield');
+      document.getElementById('tabRouterBtn').classList.toggle('active', tab === 'router');
+      document.getElementById('tabShield').classList.toggle('active', tab === 'shield');
+      document.getElementById('tabRouter').classList.toggle('active', tab === 'router');
+
+      if (tab === 'router') {
+        refreshRouterStatus();
+        refreshConnectedDevices();
+        if (routerRefreshInterval) clearInterval(routerRefreshInterval);
+        routerRefreshInterval = setInterval(() => {
+          refreshRouterStatus();
+          refreshConnectedDevices();
+        }, 3000);
+      } else {
+        if (routerRefreshInterval) clearInterval(routerRefreshInterval);
+      }
+    }
+
+    /* VPN Connect / Disconnect */
     function toggleVpnConnection() {
       if (isConnecting) return;
 
@@ -619,12 +989,11 @@
       document.getElementById('statTimer').innerText = '00:00:00';
     }
 
-    // Called from Java Native Code
     window.onAegisVpnStatusChanged = function(connected) {
       setConnectedState(connected);
     };
 
-    // Test Pipeline
+    /* Ingress Pipeline Test */
     function testPipeline() {
       const box = document.getElementById('testResultBox');
       box.style.display = 'block';
@@ -634,7 +1003,6 @@
       if (window.AndroidAegis && window.AndroidAegis.testPipeline) {
         window.AndroidAegis.testPipeline();
       } else {
-        // Fallback fetch
         const start = Date.now();
         fetch('https://api.ipify.org?format=json')
           .then(r => r.json())
@@ -650,7 +1018,6 @@
       }
     }
 
-    // Java callback for test pipeline
     window.onPipelineTestResult = function(success, message) {
       const box = document.getElementById('testResultBox');
       box.style.display = 'block';
@@ -663,7 +1030,154 @@
       }
     };
 
-    // Settings Modal
+    /* ======================================================== */
+    /* HOTSPOT MESH ROUTER & CLIENT MANAGEMENT                  */
+    /* ======================================================== */
+    function refreshRouterStatus() {
+      if (!window.AndroidAegis || !window.AndroidAegis.getMeshRouterInfo) return;
+      try {
+        const info = JSON.parse(window.AndroidAegis.getMeshRouterInfo());
+        const running = info.running;
+        currentGatewayIp = info.gatewayIp || '192.168.43.1';
+        currentRouterPort = info.port || 8080;
+
+        document.getElementById('routerIpDisplay').innerText = `${currentGatewayIp}:${currentRouterPort}`;
+        document.getElementById('guideProxyHost').innerText = currentGatewayIp;
+        document.getElementById('modalProxyHost').innerText = currentGatewayIp;
+
+        const badge = document.getElementById('routerStatusBadge');
+        const badgeText = document.getElementById('routerStatusText');
+        const btnText = document.getElementById('btnToggleRouterText');
+        const btnToggle = document.getElementById('btnToggleRouter');
+
+        if (running) {
+          badge.className = 'router-badge active';
+          badgeText.innerText = 'ROUTER ACTIVE (FORWARDING VIA TUN0)';
+          btnText.innerText = 'STOP ROUTER';
+          btnToggle.className = 'btn-action red';
+        } else {
+          badge.className = 'router-badge inactive';
+          badgeText.innerText = 'ROUTER STANDBY';
+          btnText.innerText = 'START ROUTER';
+          btnToggle.className = 'btn-action green';
+        }
+
+        updatePolicyDisplay(info.policyMode || 'OPEN');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function toggleMeshRouter() {
+      if (!window.AndroidAegis) return;
+      const running = window.AndroidAegis.isMeshRouterRunning();
+      if (running) {
+        window.AndroidAegis.stopMeshRouter();
+      } else {
+        window.AndroidAegis.startMeshRouter(8080);
+      }
+      setTimeout(refreshRouterStatus, 400);
+      setTimeout(refreshConnectedDevices, 600);
+    }
+
+    function openHotspotSettings() {
+      if (window.AndroidAegis && window.AndroidAegis.openHotspotSettings) {
+        window.AndroidAegis.openHotspotSettings();
+      } else {
+        alert('Open Android System Settings -> Tethering / Personal Hotspot.');
+      }
+    }
+
+    function setPolicy(mode) {
+      if (window.AndroidAegis && window.AndroidAegis.setRouterPolicy) {
+        window.AndroidAegis.setRouterPolicy(mode);
+      }
+      updatePolicyDisplay(mode);
+    }
+
+    function updatePolicyDisplay(mode) {
+      document.getElementById('policyOpen').classList.toggle('selected', mode === 'OPEN');
+      document.getElementById('policyApproval').classList.toggle('selected', mode === 'APPROVAL');
+      document.getElementById('policyVoucher').classList.toggle('selected', mode === 'VOUCHER');
+    }
+
+    function generateVoucher(durationMinutes) {
+      if (window.AndroidAegis && window.AndroidAegis.generateLocalVoucher) {
+        const code = window.AndroidAegis.generateLocalVoucher(durationMinutes);
+        const box = document.getElementById('voucherResultBox');
+        box.style.display = 'block';
+        box.innerHTML = `Voucher Created: <b style="color:#fff; font-size:14px;">${code}</b> (${durationMinutes < 60 ? durationMinutes + ' min' : durationMinutes/60 + ' hr'})<br/><span style="color:#94a3b8; font-size:10px;">Give this code to your friend to unlock the hotspot</span>`;
+      }
+    }
+
+    function refreshConnectedDevices() {
+      if (!window.AndroidAegis || !window.AndroidAegis.getConnectedClients) return;
+      try {
+        const clients = JSON.parse(window.AndroidAegis.getConnectedClients());
+        document.getElementById('clientCount').innerText = clients.length;
+        const container = document.getElementById('devicesContainer');
+
+        if (clients.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 14px 0;">
+              No devices connected yet.<br/>Turn on Hotspot and have friends connect!
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = '';
+        clients.forEach(c => {
+          const upMb = (c.bytesUp / (1024 * 1024)).toFixed(1);
+          const downMb = (c.bytesDown / (1024 * 1024)).toFixed(1);
+          const isAllowed = c.isAuthorized;
+
+          const card = document.createElement('div');
+          card.className = 'device-card';
+          card.innerHTML = `
+            <div class="device-header">
+              <div class="device-ip">
+                <span>💻</span> ${c.ip}
+              </div>
+              <div class="device-tag ${isAllowed ? 'allowed' : 'blocked'}">
+                ${isAllowed ? '✓ ALLOWED' : '✕ BLOCKED'}
+              </div>
+            </div>
+            <div class="device-metrics">
+              <span>Traffic: ↑ ${upMb} MB | ↓ ${downMb} MB</span>
+              <span>Total: ${(parseFloat(upMb) + parseFloat(downMb)).toFixed(1)} MB</span>
+            </div>
+            <div class="device-actions">
+              <button class="btn-device-action" onclick="toggleDeviceAuth('${c.ip}', ${!isAllowed})">
+                ${isAllowed ? 'Pause Access' : 'Allow Access'}
+              </button>
+              <button class="btn-device-action kick" onclick="kickDevice('${c.ip}')">
+                Kick
+              </button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function toggleDeviceAuth(ip, allow) {
+      if (window.AndroidAegis && window.AndroidAegis.setClientAuthorized) {
+        window.AndroidAegis.setClientAuthorized(ip, allow, 0, 0);
+        setTimeout(refreshConnectedDevices, 300);
+      }
+    }
+
+    function kickDevice(ip) {
+      if (window.AndroidAegis && window.AndroidAegis.kickClient) {
+        window.AndroidAegis.kickClient(ip);
+        setTimeout(refreshConnectedDevices, 300);
+      }
+    }
+
+    /* Modal Handlers */
     function openSettingsModal() {
       const cur = document.getElementById('statEndpoint').innerText;
       const parts = cur.split(':');
@@ -674,6 +1188,14 @@
 
     function closeSettingsModal() {
       document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    function onToggleFriendHotspot() {
+      const chk = document.getElementById('checkFriendHotspot');
+      if (chk.checked) {
+        document.getElementById('inputRelayHost').value = '192.168.43.1';
+        document.getElementById('inputRelayPort').value = '8080';
+      }
     }
 
     function saveRelaySettings() {
@@ -689,7 +1211,14 @@
         window.AndroidAegis.setEndpoint(host, port);
       }
       closeSettingsModal();
-      alert('Endpoint updated: ' + endpoint);
+    }
+
+    function openInstructionsModal() {
+      document.getElementById('instructionsModal').style.display = 'flex';
+    }
+
+    function closeInstructionsModal() {
+      document.getElementById('instructionsModal').style.display = 'none';
     }
   </script>
 </body>
