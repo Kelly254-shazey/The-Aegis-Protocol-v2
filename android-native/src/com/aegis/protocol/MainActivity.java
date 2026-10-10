@@ -20,6 +20,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 
 import com.wireguard.android.backend.Backend;
 import com.wireguard.android.backend.GoBackend;
@@ -157,7 +159,32 @@ public class MainActivity extends Activity {
         return mPrefs.getInt(KEY_PORT, 51820);
     }
 
-    private void prepareAndConnectVpn() {
+    private void promptAndConnect(final boolean skipPrompt) {
+        if (skipPrompt) {
+            executeVpnPreparation();
+            return;
+        }
+
+        new AlertDialog.Builder(MainActivity.this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                .setTitle("Aegis Tech Network")
+                .setMessage("Do you want to connect to Aegis tech network?")
+                .setPositiveButton("Connect", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        executeVpnPreparation();
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        notifyWebUiState(false);
+                    }
+                })
+                .setCancelable(true)
+                .show();
+    }
+
+    private void executeVpnPreparation() {
         try {
             Intent intent = VpnService.prepare(this);
             if (intent != null) {
@@ -166,9 +193,29 @@ public class MainActivity extends Activity {
                 onActivityResult(VPN_REQUEST_CODE, RESULT_OK, null);
             }
         } catch (Exception e) {
-            Toast.makeText(this, "VPN Prepare Failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Aegis Tech Network Prepare Failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
             notifyWebUiState(false);
         }
+    }
+
+    private void promptAndDisconnect(final boolean skipPrompt) {
+        if (skipPrompt) {
+            disconnectVpnInternal();
+            return;
+        }
+
+        new AlertDialog.Builder(MainActivity.this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                .setTitle("Aegis Tech Network")
+                .setMessage("Do you want to disconnect from Aegis tech network?")
+                .setPositiveButton("Disconnect", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        disconnectVpnInternal();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .setCancelable(true)
+                .show();
     }
 
     @Override
@@ -178,7 +225,7 @@ public class MainActivity extends Activity {
             if (resultCode == RESULT_OK) {
                 connectVpnInternal();
             } else {
-                Toast.makeText(this, "VPN permission denied by user", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Connection permission denied by user", Toast.LENGTH_SHORT).show();
                 notifyWebUiState(false);
             }
         }
@@ -270,18 +317,18 @@ public class MainActivity extends Activity {
                         @Override
                         public void run() {
                             notifyWebUiState(true);
-                            Toast.makeText(MainActivity.this, "🛡️ Connected! All apps routed securely.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, "🛡️ Connected! All apps routed securely via Aegis Tech Network.", Toast.LENGTH_SHORT).show();
                         }
                     });
                 } catch (Exception e) {
                     final String err = e.getMessage();
-                    Log.e(TAG, "VPN Start Error: " + err, e);
+                    Log.e(TAG, "Aegis Tech Network Start Error: " + err, e);
                     mMainHandler.post(new Runnable() {
                         @Override
                         public void run() {
                             mIsConnected = false;
                             notifyWebUiState(false);
-                            Toast.makeText(MainActivity.this, "Connection Error: " + err, Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, "Aegis Tech Network Error: " + err, Toast.LENGTH_LONG).show();
                         }
                     });
                 }
@@ -302,11 +349,11 @@ public class MainActivity extends Activity {
                         @Override
                         public void run() {
                             notifyWebUiState(false);
-                            Toast.makeText(MainActivity.this, "Aegis Tunnel Disconnected", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, "Aegis Tech Network Disconnected", Toast.LENGTH_SHORT).show();
                         }
                     });
                 } catch (Exception e) {
-                    Log.e(TAG, "VPN Stop Error: " + e.getMessage(), e);
+                    Log.e(TAG, "Aegis Tech Network Stop Error: " + e.getMessage(), e);
                     mMainHandler.post(new Runnable() {
                         @Override
                         public void run() {
@@ -335,7 +382,19 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() {
                     if (!mIsConnected) {
-                        prepareAndConnectVpn();
+                        promptAndConnect(false);
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void connectVpnDirect() {
+            mMainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (!mIsConnected) {
+                        promptAndConnect(true);
                     }
                 }
             });
@@ -347,7 +406,19 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() {
                     if (mIsConnected) {
-                        disconnectVpnInternal();
+                        promptAndDisconnect(false);
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void disconnectVpnDirect() {
+            mMainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (mIsConnected) {
+                        promptAndDisconnect(true);
                     }
                 }
             });

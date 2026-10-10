@@ -1365,21 +1365,21 @@ echo "🎉 Router $ROUTER_NAME successfully joined the Aegis Unified Mesh Channe
     <!-- ======================================================== -->
     <div class="glass-card" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.16), rgba(16, 185, 129, 0.12)); border: 1px solid rgba(6, 182, 212, 0.45); text-align: center; padding: 24px 20px; margin-bottom: 22px;">
       <div style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: 0.02em;">
-        📱 The Aegis Protocol — Native Android App
+        📱 Aegis Tech Network — Native Android App
       </div>
       <div style="font-size: 12.5px; color: var(--text-muted); max-width: 480px; margin: 0 auto 18px; line-height: 1.5;">
-        Direct 1-click device-wide VPN. Built-in kernel-grade WireGuard engine (tun0). Routes 100% of all apps (Chrome, YouTube, WhatsApp) through the Azure & Laptop Broadband Mesh. No third-party apps required.
+        Direct 1-click device-wide Aegis Tech Network. Built-in kernel-grade WireGuard engine (tun0). Routes 100% of all apps (Chrome, YouTube, WhatsApp) through the Azure & Laptop Broadband Mesh with 0 IP leaks. No third-party apps required.
       </div>
 
       <div style="display: flex; flex-direction: column; align-items: center; gap: 14px;">
         <div style="background: #fff; padding: 10px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); display: inline-block;">
-          <img id="apkDownloadQr" style="width: 160px; height: 160px; display: block;" alt="Scan to Install Aegis APK" />
+          <img id="apkDownloadQr" style="width: 160px; height: 160px; display: block;" alt="Scan to Install Aegis Tech Network APK" />
         </div>
         <div style="font-size: 12px; font-weight: 700; color: var(--cyan); display: flex; align-items: center; gap: 6px;">
           <span>📷</span> Scan with any phone camera to install directly
         </div>
         <a href="/aegis.apk" class="btn-primary" style="text-decoration: none; width: 100%; max-width: 320px; padding: 14px 22px; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 22px rgba(6, 182, 212, 0.4); border-radius: 12px;">
-          <span>⬇️ Download AegisProtocol.apk (4.5 MB)</span>
+          <span>⬇️ Download Aegis Tech Network APK (4.5 MB)</span>
         </a>
       </div>
     </div>

@@ -628,7 +628,7 @@
     <div class="brand">
       <div class="brand-icon">🛡️</div>
       <div>
-        <div class="brand-title">THE AEGIS PROTOCOL</div>
+        <div class="brand-title">AEGIS TECH NETWORK</div>
         <div class="brand-subtitle">Zero-Leak Autonomous Bandwidth Relay</div>
       </div>
     </div>
@@ -640,22 +640,22 @@
   <!-- Navigation Tabs -->
   <div class="nav-tabs">
     <button id="tabShieldBtn" class="tab-btn active" onclick="switchTab('shield')">
-      🛡️ MESH SHIELD
+      🛡️ AEGIS TECH NETWORK
     </button>
     <button id="tabRouterBtn" class="tab-btn" onclick="switchTab('router')">
       📡 HOTSPOT AP ROUTER
     </button>
   </div>
 
-  <!-- ========================================== -->
-  <!-- TAB 1: MESH SHIELD (VPN TUNNEL CONTROLLER) -->
-  <!-- ========================================== -->
+  <!-- ============================================== -->
+  <!-- TAB 1: AEGIS TECH NETWORK (SECURE PIPELINE)    -->
+  <!-- ============================================== -->
   <div id="tabShield" class="tab-content active">
 
     <!-- Status Badge -->
     <div id="statusBadge" class="status-badge">
       <div class="status-dot"></div>
-      <span id="statusBadgeText">STANDBY (0 IP LEAK)</span>
+      <span id="statusBadgeText">AEGIS TECH NETWORK: STANDBY</span>
     </div>
 
     <!-- Interactive Power Button -->
@@ -664,14 +664,14 @@
       <div class="power-btn">
         <div id="powerIcon" class="power-icon">🛡️</div>
         <div id="powerBtnText" class="power-btn-text">CONNECT</div>
-        <div id="powerBtnSub" class="power-btn-sub">1-Click Tunnel</div>
+        <div id="powerBtnSub" class="power-btn-sub">Aegis Tech Network</div>
       </div>
     </div>
 
     <!-- Live Telemetry Card -->
     <div class="card">
       <div class="card-title">
-        <span>🔒 Live Encrypted Tunnel</span>
+        <span>🔒 Aegis Tech Network Pipeline</span>
         <span style="font-size: 10px; color: var(--green);">● HARDWARE ACCELERATED</span>
       </div>
       <div class="grid-2">
@@ -680,15 +680,15 @@
           <div class="stat-value cyan" id="statAdapter">tun0 (MTU 1380)</div>
         </div>
         <div class="stat-box">
-          <div class="stat-label">Blinded Mesh IP</div>
+          <div class="stat-label">Aegis Mesh IP</div>
           <div class="stat-value green" id="statMeshIp">10.66.66.2</div>
         </div>
         <div class="stat-box">
-          <div class="stat-label">Cloud Relay</div>
+          <div class="stat-label">Aegis Cloud Relay</div>
           <div class="stat-value" id="statEndpoint">172.209.217.140:51820</div>
         </div>
         <div class="stat-box">
-          <div class="stat-label">Tunnel Uptime</div>
+          <div class="stat-label">Network Uptime</div>
           <div class="stat-value amber" id="statTimer">00:00:00</div>
         </div>
       </div>
@@ -710,13 +710,13 @@
     <!-- Ingress Test Card -->
     <div class="card">
       <div class="card-title">
-        <span>⚡ Ingress Pipeline Verification</span>
+        <span>⚡ Aegis Tech Network Verification</span>
       </div>
       <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
-        Verifies end-to-end routing through Cloud Relay and Broadband Provider:
+        Verifies end-to-end routing through Aegis Tech Network Relay & Broadband Mesh:
       </div>
       <button class="btn-action" onclick="testPipeline()">
-        <span>🚀</span> TEST INGRESS PIPELINE
+        <span>🚀</span> TEST AEGIS TECH NETWORK
       </button>
       <div id="testResultBox" class="result-box"></div>
     </div>
@@ -735,7 +735,7 @@
         <span id="routerStatusText">ROUTER STANDBY</span>
       </div>
       <div id="routerIpDisplay" class="router-ip-display">192.168.43.1:8080</div>
-      <div class="router-sub-label">Mobile Hotspot Gateway (All Clients Routed via tun0)</div>
+      <div class="router-sub-label">Mobile Hotspot Gateway (All Clients Routed via Aegis Tech Network)</div>
 
       <div class="router-actions-grid">
         <button id="btnToggleRouter" class="btn-action green" onclick="toggleMeshRouter()">
@@ -866,6 +866,56 @@
     </div>
   </div>
 
+  <!-- Aegis Tech Network Connect Confirmation Modal -->
+  <div id="aegisConnectModal" class="modal-overlay">
+    <div class="modal-card" style="text-align: center;">
+      <div style="font-size: 42px; margin-bottom: 12px; filter: drop-shadow(0 0 14px var(--cyan-glow));">🌐</div>
+      <div class="modal-title" style="justify-content: center; font-size: 18px; margin-bottom: 8px;">
+        Aegis Tech Network
+      </div>
+      <div style="font-size: 14.5px; font-weight: 700; color: #fff; margin-bottom: 14px; line-height: 1.5;">
+        Do you want to connect to Aegis tech network?
+      </div>
+      <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 12px; border: 1px solid var(--border-card);">
+        <div style="margin-bottom: 4px;">🔒 <b style="color: #fff;">Quantum Shield:</b> Noise_IK + 256-bit PSK Encryption</div>
+        <div style="margin-bottom: 4px;">⚡ <b style="color: #fff;">Broadband Route:</b> Azure 24/7 Relay & Laptop Pipeline</div>
+        <div>🛡️ <b style="color: #fff;">Zero-Leak:</b> 100% of device apps routed with 0 IP leaks</div>
+      </div>
+      <div class="modal-actions" style="flex-direction: column; gap: 10px;">
+        <button class="btn-action cyan" style="padding: 13px; font-size: 13px; font-weight: 800;" onclick="confirmConnectAegis()">
+          <span>🚀</span> CONNECT TO AEGIS TECH NETWORK
+        </button>
+        <button class="btn-cancel" style="padding: 10px; font-size: 12px;" onclick="closeConnectModal()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aegis Tech Network Disconnect Confirmation Modal -->
+  <div id="aegisDisconnectModal" class="modal-overlay">
+    <div class="modal-card" style="text-align: center;">
+      <div style="font-size: 42px; margin-bottom: 12px; filter: drop-shadow(0 0 14px var(--red-glow));">🛑</div>
+      <div class="modal-title" style="justify-content: center; font-size: 18px; margin-bottom: 8px;">
+        Aegis Tech Network
+      </div>
+      <div style="font-size: 14.5px; font-weight: 700; color: #fff; margin-bottom: 14px; line-height: 1.5;">
+        Do you want to disconnect from Aegis tech network?
+      </div>
+      <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 12px; border: 1px solid var(--border-card);">
+        ⚠️ <b style="color: #fff;">Notice:</b> Disconnecting will deactivate the zero-leak shield. Your apps will drop secure mesh routing and revert to unencrypted cellular data.
+      </div>
+      <div class="modal-actions" style="flex-direction: column; gap: 10px;">
+        <button class="btn-action red" style="padding: 13px; font-size: 13px; font-weight: 800;" onclick="confirmDisconnectAegis()">
+          <span>🛑</span> DISCONNECT FROM NETWORK
+        </button>
+        <button class="btn-cancel" style="padding: 10px; font-size: 12px;" onclick="closeDisconnectModal()">
+          Keep Connected
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let isConnected = false;
     let isConnecting = false;
@@ -915,24 +965,63 @@
       }
     }
 
-    /* VPN Connect / Disconnect */
+    /* Modal Dialog Controls */
+    function openConnectModal() {
+      const modal = document.getElementById('aegisConnectModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeConnectModal() {
+      const modal = document.getElementById('aegisConnectModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function openDisconnectModal() {
+      const modal = document.getElementById('aegisDisconnectModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeDisconnectModal() {
+      const modal = document.getElementById('aegisDisconnectModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    /* Aegis Tech Network Connect / Disconnect */
     function toggleVpnConnection() {
       if (isConnecting) return;
 
       if (isConnected) {
-        setConnectingState('DISCONNECTING...');
-        if (window.AndroidAegis) {
-          window.AndroidAegis.disconnectVpn();
+        openDisconnectModal();
+      } else {
+        openConnectModal();
+      }
+    }
+
+    function confirmConnectAegis() {
+      closeConnectModal();
+      setConnectingState('NEGOTIATING AEGIS TECH NETWORK...');
+      if (window.AndroidAegis) {
+        if (typeof window.AndroidAegis.connectVpnDirect === 'function') {
+          window.AndroidAegis.connectVpnDirect();
         } else {
-          setTimeout(() => setConnectedState(false), 800);
+          window.AndroidAegis.connectVpn();
         }
       } else {
-        setConnectingState('NEGOTIATING NOISE HANDSHAKE...');
-        if (window.AndroidAegis) {
-          window.AndroidAegis.connectVpn();
+        setTimeout(() => setConnectedState(true), 1200);
+      }
+    }
+
+    function confirmDisconnectAegis() {
+      closeDisconnectModal();
+      setConnectingState('DISCONNECTING...');
+      if (window.AndroidAegis) {
+        if (typeof window.AndroidAegis.disconnectVpnDirect === 'function') {
+          window.AndroidAegis.disconnectVpnDirect();
         } else {
-          setTimeout(() => setConnectedState(true), 1200);
+          window.AndroidAegis.disconnectVpn();
         }
+      } else {
+        setTimeout(() => setConnectedState(false), 800);
       }
     }
 
@@ -964,18 +1053,18 @@
       if (connected) {
         launcher.classList.add('connected');
         badge.className = 'status-badge connected';
-        badgeText.innerText = 'ACTIVE (0 IP LEAK ENFORCED)';
+        badgeText.innerText = 'AEGIS TECH NETWORK: ACTIVE (0 IP LEAK)';
         pIcon.innerText = '🟢';
         pText.innerText = 'DISCONNECT';
-        pSub.innerText = 'All Apps Routed';
+        pSub.innerText = 'Aegis Tech Network';
         startTimer();
       } else {
         launcher.classList.remove('connected');
         badge.className = 'status-badge';
-        badgeText.innerText = 'STANDBY (0 IP LEAK)';
+        badgeText.innerText = 'AEGIS TECH NETWORK: STANDBY';
         pIcon.innerText = '🛡️';
         pText.innerText = 'CONNECT';
-        pSub.innerText = '1-Click Tunnel';
+        pSub.innerText = 'Aegis Tech Network';
         stopTimer();
       }
     }
