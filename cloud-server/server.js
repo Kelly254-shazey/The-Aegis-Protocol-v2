@@ -10,6 +10,7 @@ const https = require('https')
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
+const cp = require('child_process')
 
 const PORT = process.env.PORT || 3888
 const HOST = process.env.HOST || '0.0.0.0'
@@ -315,6 +316,31 @@ PersistentKeepalive = 15
       'Content-Disposition': 'attachment; filename="aegis-mobile.conf"'
     })
     res.end(confContent)
+    return
+  }
+
+  // --- API ROUTE: Kernel WireGuard & Internet Pipeline Diagnostic ---
+  if (url.pathname === '/api/tunnel/diagnostic' && req.method === 'GET') {
+    let wgOutput = 'unknown'
+    let wgActive = false
+    try {
+      wgOutput = cp.execSync('wg show || true', { encoding: 'utf8', timeout: 3000 }).trim()
+      wgActive = wgOutput.includes('interface: wg0')
+    } catch (e) {
+      wgOutput = e.message
+    }
+    const activeProviders = providerUplinks.filter((p) => p.status === 'online').length
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(
+      JSON.stringify({
+        wireguardInterface: wgActive ? 'UP' : 'DOWN',
+        wireguardListening: wgActive,
+        wireguardDetails: wgOutput,
+        activeProviders,
+        internetPipeline: activeProviders > 0 ? 'READY' : 'CLOUD_DIRECT',
+        timestamp: Date.now()
+      })
+    )
     return
   }
 
