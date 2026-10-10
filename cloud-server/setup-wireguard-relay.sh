@@ -66,6 +66,7 @@ PrivateKey = aDuOdHc6OnxAmfNTKAEFSQfqXnS2pZ5iGDqodxc1NUA=
 # 4. Drop INVALID connection state packets
 # 5. TCP MSS Clamping (PMTU fragmentation leak protection)
 # 6. Strict Encrypted DNS Enforcement (1.1.1.1)
+# 7. Global Multi-Port DPI Bypass (UDP 443 / 53 -> 51820)
 PostUp = iptables -A FORWARD -i wg0 -o __ETH__ -j ACCEPT; \
          iptables -A FORWARD -i __ETH__ -o wg0 -m state --state RELATED,ESTABLISHED -j ACCEPT; \
          iptables -t nat -A POSTROUTING -s 10.66.66.0/24 -o __ETH__ -j MASQUERADE; \
@@ -74,7 +75,9 @@ PostUp = iptables -A FORWARD -i wg0 -o __ETH__ -j ACCEPT; \
          iptables -I FORWARD -m conntrack --ctstate INVALID -j DROP; \
          iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu; \
          iptables -t nat -A PREROUTING -i wg0 -p udp --dport 53 -j DNAT --to-destination 1.1.1.1:53; \
-         iptables -t nat -A PREROUTING -i wg0 -p tcp --dport 53 -j DNAT --to-destination 1.1.1.1:53
+         iptables -t nat -A PREROUTING -i wg0 -p tcp --dport 53 -j DNAT --to-destination 1.1.1.1:53; \
+         iptables -t nat -A PREROUTING -i __ETH__ -p udp --dport 443 -j REDIRECT --to-ports 51820; \
+         iptables -t nat -A PREROUTING -i __ETH__ -p udp --dport 53 -j REDIRECT --to-ports 51820
 
 PostDown = iptables -D FORWARD -i wg0 -o __ETH__ -j ACCEPT || true; \
            iptables -D FORWARD -i __ETH__ -o wg0 -m state --state RELATED,ESTABLISHED -j ACCEPT || true; \
@@ -84,7 +87,9 @@ PostDown = iptables -D FORWARD -i wg0 -o __ETH__ -j ACCEPT || true; \
            iptables -D FORWARD -m conntrack --ctstate INVALID -j DROP || true; \
            iptables -t mangle -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu || true; \
            iptables -t nat -D PREROUTING -i wg0 -p udp --dport 53 -j DNAT --to-destination 1.1.1.1:53 || true; \
-           iptables -t nat -D PREROUTING -i wg0 -p tcp --dport 53 -j DNAT --to-destination 1.1.1.1:53 || true
+           iptables -t nat -D PREROUTING -i wg0 -p tcp --dport 53 -j DNAT --to-destination 1.1.1.1:53 || true; \
+           iptables -t nat -D PREROUTING -i __ETH__ -p udp --dport 443 -j REDIRECT --to-ports 51820 || true; \
+           iptables -t nat -D PREROUTING -i __ETH__ -p udp --dport 53 -j REDIRECT --to-ports 51820 || true
 
 [Peer]
 # Mobile Client Peer (Town / Anywhere Mode) with Post-Quantum 256-bit PSK
@@ -107,14 +112,14 @@ cat << 'EOF' > /root/aegis-mobile.conf
 PrivateKey = OFZmrh2n9ATyqyBDvTSLzWZcQ7yEHmqpV+VRQ99ZEUI=
 Address = 10.66.66.2/24
 DNS = 1.1.1.1, 9.9.9.9
-MTU = 1380
+MTU = 1360
 
 [Peer]
 PublicKey = 73qDgl+OL2zLEXOq03Q+oW3NWb1HoXETCLYMGqPeChY=
 PresharedKey = p83mNcmu4cN/FEsEA2T8eN+91X/poBY+wkj/zvgQeCQ=
 Endpoint = 172.209.217.140:51820
 AllowedIPs = 0.0.0.0/0
-PersistentKeepalive = 25
+PersistentKeepalive = 15
 EOF
 chmod 644 /root/aegis-mobile.conf
 

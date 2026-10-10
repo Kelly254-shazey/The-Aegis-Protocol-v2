@@ -301,14 +301,14 @@ const server = http.createServer((req, res) => {
 PrivateKey = OFZmrh2n9ATyqyBDvTSLzWZcQ7yEHmqpV+VRQ99ZEUI=
 Address = 10.66.66.2/24
 DNS = 1.1.1.1, 9.9.9.9
-MTU = 1380
+MTU = 1360
 
 [Peer]
 PublicKey = 73qDgl+OL2zLEXOq03Q+oW3NWb1HoXETCLYMGqPeChY=
 PresharedKey = p83mNcmu4cN/FEsEA2T8eN+91X/poBY+wkj/zvgQeCQ=
 Endpoint = 172.209.217.140:51820
 AllowedIPs = 0.0.0.0/0
-PersistentKeepalive = 25
+PersistentKeepalive = 15
 `
     res.writeHead(200, {
       'Content-Type': 'application/x-wireguard-profile',

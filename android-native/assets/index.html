@@ -821,6 +821,14 @@
       <div class="input-group">
         <label class="input-label">WireGuard UDP Port:</label>
         <input id="inputRelayPort" class="input-field" type="number" placeholder="51820" />
+        <div style="display:flex; gap:6px; margin-top:6px;">
+          <button type="button" class="btn-device-action" style="padding:4px;" onclick="document.getElementById('inputRelayPort').value='51820'">51820 (Std)</button>
+          <button type="button" class="btn-device-action" style="padding:4px; color:var(--cyan); border-color:var(--cyan);" onclick="document.getElementById('inputRelayPort').value='443'">443 (Bypass)</button>
+          <button type="button" class="btn-device-action" style="padding:4px; color:var(--green); border-color:var(--green);" onclick="document.getElementById('inputRelayPort').value='53'">53 (DNS)</button>
+        </div>
+        <div style="font-size:10px; color:var(--text-muted); margin-top:3px;">
+          Use Port 443 or 53 if traveling abroad or if 51820 is restricted by hotel/roaming Wi-Fi.
+        </div>
       </div>
       <div class="input-group" style="padding: 10px; background: rgba(0,0,0,0.4); border-radius: 10px; border: 1px solid var(--border-card);">
         <label class="input-label" style="display: flex; align-items: center; gap: 8px; color: #fff; cursor: pointer;">

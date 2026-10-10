@@ -110,8 +110,9 @@ function registerProvider() {
   req.end()
 }
 
-// 1. Initial registration
+// 1. Initial registration and periodic lease renewal (every 60s)
 registerProvider()
+setInterval(registerProvider, 60000)
 
 // 2. Start worker polling loop (Fetch client requests via Laptop Broadband)
 function pollChannelTask() {

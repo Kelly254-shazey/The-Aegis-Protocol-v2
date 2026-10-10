@@ -244,16 +244,20 @@ public class MainActivity extends Activity {
                                 "PrivateKey = OFZmrh2n9ATyqyBDvTSLzWZcQ7yEHmqpV+VRQ99ZEUI=\n" +
                                 "Address = 10.66.66.2/24\n" +
                                 "DNS = 1.1.1.1, 9.9.9.9\n" +
-                                "MTU = 1380\n\n" +
+                                "MTU = 1360\n\n" +
                                 "[Peer]\n" +
                                 "PublicKey = 73qDgl+OL2zLEXOq03Q+oW3NWb1HoXETCLYMGqPeChY=\n" +
                                 "PresharedKey = p83mNcmu4cN/FEsEA2T8eN+91X/poBY+wkj/zvgQeCQ=\n" +
                                 "Endpoint = " + endpointHost + ":" + endpointPort + "\n" +
                                 "AllowedIPs = 0.0.0.0/0\n" +
-                                "PersistentKeepalive = 25\n";
-                    } else if (wgConfigString.contains("Endpoint =")) {
-                        // Ensure endpoint reflects user-saved host & port
-                        wgConfigString = wgConfigString.replaceAll("Endpoint = [^\n]+", "Endpoint = " + endpointHost + ":" + endpointPort);
+                                "PersistentKeepalive = 15\n";
+                    } else {
+                        // Ensure endpoint reflects user-saved host & port and enforce roaming parameters
+                        if (wgConfigString.contains("Endpoint =")) {
+                            wgConfigString = wgConfigString.replaceAll("Endpoint = [^\n]+", "Endpoint = " + endpointHost + ":" + endpointPort);
+                        }
+                        wgConfigString = wgConfigString.replaceAll("PersistentKeepalive = [^\n]+", "PersistentKeepalive = 15");
+                        wgConfigString = wgConfigString.replaceAll("MTU = [^\n]+", "MTU = 1360");
                     }
 
                     InputStream is = new ByteArrayInputStream(wgConfigString.getBytes(StandardCharsets.UTF_8));
