@@ -67,29 +67,29 @@ PrivateKey = aDuOdHc6OnxAmfNTKAEFSQfqXnS2pZ5iGDqodxc1NUA=
 # 5. TCP MSS Clamping (PMTU fragmentation leak protection)
 # 6. Strict Encrypted DNS Enforcement (1.1.1.1)
 # 7. Global Multi-Port DPI Bypass (UDP 443 / 53 -> 51820)
-PostUp = iptables -A FORWARD -i wg0 -o __ETH__ -j ACCEPT; \
-         iptables -A FORWARD -i __ETH__ -o wg0 -m state --state RELATED,ESTABLISHED -j ACCEPT; \
-         iptables -t nat -A POSTROUTING -s 10.66.66.0/24 -o __ETH__ -j MASQUERADE; \
-         iptables -I FORWARD -i wg0 -o wg0 -j DROP; \
-         iptables -t raw -I PREROUTING -i wg0 ! -s 10.66.66.0/24 -j DROP; \
-         iptables -I FORWARD -m conntrack --ctstate INVALID -j DROP; \
-         iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu; \
-         iptables -t nat -A PREROUTING -i wg0 -p udp --dport 53 -j DNAT --to-destination 1.1.1.1:53; \
-         iptables -t nat -A PREROUTING -i wg0 -p tcp --dport 53 -j DNAT --to-destination 1.1.1.1:53; \
-         iptables -t nat -A PREROUTING -i __ETH__ -p udp --dport 443 -j REDIRECT --to-ports 51820; \
-         iptables -t nat -A PREROUTING -i __ETH__ -p udp --dport 53 -j REDIRECT --to-ports 51820
+PostUp = iptables -A FORWARD -i wg0 -o __ETH__ -j ACCEPT || true
+PostUp = iptables -A FORWARD -i __ETH__ -o wg0 -m state --state RELATED,ESTABLISHED -j ACCEPT || true
+PostUp = iptables -t nat -A POSTROUTING -s 10.66.66.0/24 -o __ETH__ -j MASQUERADE || true
+PostUp = iptables -I FORWARD -i wg0 -o wg0 -j DROP || true
+PostUp = iptables -t raw -I PREROUTING -i wg0 ! -s 10.66.66.0/24 -j DROP || true
+PostUp = iptables -I FORWARD -m conntrack --ctstate INVALID -j DROP || true
+PostUp = iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu || true
+PostUp = iptables -t nat -A PREROUTING -i wg0 -p udp --dport 53 -j DNAT --to-destination 1.1.1.1:53 || true
+PostUp = iptables -t nat -A PREROUTING -i wg0 -p tcp --dport 53 -j DNAT --to-destination 1.1.1.1:53 || true
+PostUp = iptables -t nat -A PREROUTING -i __ETH__ -p udp --dport 443 -j REDIRECT --to-ports 51820 || true
+PostUp = iptables -t nat -A PREROUTING -i __ETH__ -p udp --dport 53 -j REDIRECT --to-ports 51820 || true
 
-PostDown = iptables -D FORWARD -i wg0 -o __ETH__ -j ACCEPT || true; \
-           iptables -D FORWARD -i __ETH__ -o wg0 -m state --state RELATED,ESTABLISHED -j ACCEPT || true; \
-           iptables -t nat -D POSTROUTING -s 10.66.66.0/24 -o __ETH__ -j MASQUERADE || true; \
-           iptables -D FORWARD -i wg0 -o wg0 -j DROP || true; \
-           iptables -t raw -D PREROUTING -i wg0 ! -s 10.66.66.0/24 -j DROP || true; \
-           iptables -D FORWARD -m conntrack --ctstate INVALID -j DROP || true; \
-           iptables -t mangle -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu || true; \
-           iptables -t nat -D PREROUTING -i wg0 -p udp --dport 53 -j DNAT --to-destination 1.1.1.1:53 || true; \
-           iptables -t nat -D PREROUTING -i wg0 -p tcp --dport 53 -j DNAT --to-destination 1.1.1.1:53 || true; \
-           iptables -t nat -D PREROUTING -i __ETH__ -p udp --dport 443 -j REDIRECT --to-ports 51820 || true; \
-           iptables -t nat -D PREROUTING -i __ETH__ -p udp --dport 53 -j REDIRECT --to-ports 51820 || true
+PostDown = iptables -D FORWARD -i wg0 -o __ETH__ -j ACCEPT || true
+PostDown = iptables -D FORWARD -i __ETH__ -o wg0 -m state --state RELATED,ESTABLISHED -j ACCEPT || true
+PostDown = iptables -t nat -D POSTROUTING -s 10.66.66.0/24 -o __ETH__ -j MASQUERADE || true
+PostDown = iptables -D FORWARD -i wg0 -o wg0 -j DROP || true
+PostDown = iptables -t raw -D PREROUTING -i wg0 ! -s 10.66.66.0/24 -j DROP || true
+PostDown = iptables -D FORWARD -m conntrack --ctstate INVALID -j DROP || true
+PostDown = iptables -t mangle -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu || true
+PostDown = iptables -t nat -D PREROUTING -i wg0 -p udp --dport 53 -j DNAT --to-destination 1.1.1.1:53 || true
+PostDown = iptables -t nat -D PREROUTING -i wg0 -p tcp --dport 53 -j DNAT --to-destination 1.1.1.1:53 || true
+PostDown = iptables -t nat -D PREROUTING -i __ETH__ -p udp --dport 443 -j REDIRECT --to-ports 51820 || true
+PostDown = iptables -t nat -D PREROUTING -i __ETH__ -p udp --dport 53 -j REDIRECT --to-ports 51820 || true
 
 [Peer]
 # Mobile Client Peer (Town / Anywhere Mode) with Post-Quantum 256-bit PSK
@@ -103,8 +103,10 @@ chmod 600 /etc/wireguard/wg0.conf
 
 # 5. Start & Enable WireGuard wg0 Service
 systemctl stop wg-quick@wg0 2>/dev/null || true
+wg-quick down wg0 2>/dev/null || true
+ip link delete dev wg0 2>/dev/null || true
 systemctl enable wg-quick@wg0
-systemctl restart wg-quick@wg0
+systemctl start wg-quick@wg0
 
 # 6. Generate Mobile Client Configuration File
 cat << 'EOF' > /root/aegis-mobile.conf
