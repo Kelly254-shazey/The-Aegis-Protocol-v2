@@ -48,12 +48,21 @@ function createMeshAuthHeaders(body = '') {
   }
 }
 
+let isRegistering = false
+let isPolling = false
+
 function registerProvider() {
+  if (isRegistering) return
+  isRegistering = true
+
   const payload = JSON.stringify({
     id: PROVIDER_ID,
+    operatorId: process.env.OPERATOR_ID || 'router-owner',
+    operatorName: process.env.OPERATOR_NAME || 'Master Owner (You)',
     name: PROVIDER_NAME,
-    type: 'home_router',
+    type: 'v3_operator_router',
     location: LOCATION,
+    maxSlots: parseInt(process.env.MAX_SLOTS || '64', 10),
     bandwidthMbps: BANDWIDTH_MBPS,
     isHomeRouter: true
   })
@@ -77,8 +86,11 @@ function registerProvider() {
     },
     (res) => {
       let body = ''
-      res.on('data', (d) => (body += d))
+      res.on('data', (d) => {
+        if (body.length < 16384) body += d
+      })
       res.on('end', () => {
+        isRegistering = false
         try {
           const data = JSON.parse(body)
           if (data.status === 'registered') {
@@ -97,25 +109,35 @@ function registerProvider() {
   )
 
   req.on('error', (err) => {
+    isRegistering = false
     console.error(`[X] Uplink connection error:`, err.message)
-    setTimeout(registerProvider, 5000)
   })
 
   req.on('timeout', () => {
+    isRegistering = false
     req.destroy()
-    setTimeout(registerProvider, 5000)
   })
 
   req.write(payload)
   req.end()
 }
 
-// 1. Initial registration and periodic lease renewal (every 60s)
+// 1. Initial registration and periodic lease renewal (every 45s, zero duplicate timers)
 registerProvider()
-setInterval(registerProvider, 60000)
+setInterval(registerProvider, 45000)
 
 // 2. Start worker polling loop (Fetch client requests via Laptop Broadband)
 function pollChannelTask() {
+  if (isPolling) return
+  isPolling = true
+  let nextScheduled = false
+  const scheduleNext = (delayMs) => {
+    if (nextScheduled) return
+    nextScheduled = true
+    isPolling = false
+    setTimeout(pollChannelTask, delayMs)
+  }
+
   const authHeaders = createMeshAuthHeaders('')
   const url = new URL(CLOUD_URL + '/api/channel/provider/poll')
   const client = getClient(url.protocol)
@@ -133,7 +155,9 @@ function pollChannelTask() {
     (res) => {
       if (res.statusCode === 200) {
         let body = ''
-        res.on('data', (d) => (body += d))
+        res.on('data', (d) => {
+          if (body.length < 32768) body += d
+        })
         res.on('end', () => {
           try {
             const task = JSON.parse(body)
@@ -142,21 +166,22 @@ function pollChannelTask() {
               fetchAndResolve(task.taskId, task.url)
             }
           } catch {}
-          setImmediate(pollChannelTask)
+          scheduleNext(50)
         })
       } else {
-        setTimeout(pollChannelTask, 2000)
+        res.resume()
+        scheduleNext(1500)
       }
     }
   )
 
   req.on('error', () => {
-    setTimeout(pollChannelTask, 3000)
+    scheduleNext(3000)
   })
 
   req.on('timeout', () => {
     req.destroy()
-    setImmediate(pollChannelTask)
+    scheduleNext(500)
   })
 }
 
@@ -185,6 +210,9 @@ function fetchAndResolve(taskId, targetUrl) {
       sendResolution(taskId, data, lat)
     })
   })
+  clientReq.on('timeout', () => {
+    clientReq.destroy()
+  })
   clientReq.on('error', (err) => {
     sendResolution(taskId, 'Fetch error: ' + err.message, Date.now() - start)
   })
@@ -206,10 +234,16 @@ function sendResolution(taskId, data, latencyMs) {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(payload),
         ...authHeaders
-      }
+      },
+      timeout: 8000
     },
-    () => {}
+    (res) => {
+      res.resume()
+    }
   )
+  postReq.on('timeout', () => {
+    postReq.destroy()
+  })
   postReq.on('error', () => {})
   postReq.write(payload)
   postReq.end()
@@ -219,12 +253,15 @@ function sendResolution(taskId, data, latencyMs) {
 pollChannelTask()
 
 // 3. Periodic heartbeat & channel keepalive every 30 seconds
+let isHeartbeating = false
 setInterval(() => {
+  if (isHeartbeating) return
+  isHeartbeating = true
   const start = Date.now()
   const authHeaders = createMeshAuthHeaders('')
   const url = new URL(CLOUD_URL + '/api/ping')
   const client = getClient(url.protocol)
-  client
+  const hbReq = client
     .get(
       {
         hostname: url.hostname,
@@ -237,11 +274,18 @@ setInterval(() => {
         timeout: 5000
       },
       (res) => {
+        res.resume()
+        isHeartbeating = false
         const lat = Date.now() - start
         console.log(`[♥] Channel Heartbeat: OK (${lat}ms latency to Azure South Africa Relay)`)
       }
     )
-    .on('error', (err) => {
-      console.warn(`[!] Heartbeat failed:`, err.message)
-    })
+  hbReq.on('timeout', () => {
+    isHeartbeating = false
+    hbReq.destroy()
+  })
+  hbReq.on('error', (err) => {
+    isHeartbeating = false
+    console.warn(`[!] Heartbeat failed:`, err.message)
+  })
 }, 30000)
