@@ -57,123 +57,139 @@ let activePackages = [
   }
 ]
 
-// --- Version 3 Multi-Tenant Operator Router Base Stations (1..N) ---
-// Each router is a Core Network Source whose capacity = max connections (maxSlots) the router can hold.
-// Every operator pool runs in a strictly isolated VRF namespace (10.70.X.0/24) so no one can bridge into another's traffic.
-let providerUplinks = [
-  {
-    id: 'router-owner',
-    operatorId: 'owner',
-    operatorName: 'Master App Owner (Me)',
-    name: 'Owner Home Router (Master Base)',
-    type: 'home_router_base',
-    location: 'Owner Residence Broadband Trunk',
-    maxSlots: 64,
-    activeSlots: 1,
-    bandwidthMbps: 300,
-    usableMeshMbps: 240,
-    householdReserveMbps: 60,
-    vrfNamespace: 'vrf-router-owner-10.70.1.0/24',
-    subnetIndex: 1,
-    subnetCidr: '10.70.1.0/24',
-    hostSharePct: 100,
-    ownerSharePct: 0,
-    grossRevenueUsd: 48.0,
-    hostEarnedUsd: 48.0,
-    ownerRoyaltyUsd: 0.0,
-    bytesRouted: 145200000,
-    crossTalkBlocked: 0,
-    status: 'online',
-    isHomeRouter: true,
-    blindedIp: '100.64.10.1 [Cloaked]',
-    macAddressScrubbed: true,
-    realIpHidden: true,
-    antiMitmShield: 'Noise_XX_25519 + VRF Namespace Isolation',
-    registeredAt: Date.now()
-  },
-  {
-    id: 'router-lec',
-    operatorId: 'lec',
-    operatorName: 'Lecturer (Lec)',
-    name: 'Lecturer Home Router',
-    type: 'home_router_base',
-    location: 'Lecturer Residence Fiber Trunk',
-    maxSlots: 32,
-    activeSlots: 1,
-    bandwidthMbps: 150,
-    usableMeshMbps: 120,
-    householdReserveMbps: 30,
-    vrfNamespace: 'vrf-router-lec-10.70.2.0/24',
-    subnetIndex: 2,
-    subnetCidr: '10.70.2.0/24',
-    hostSharePct: 70,
-    ownerSharePct: 30,
-    grossRevenueUsd: 35.0,
-    hostEarnedUsd: 24.5,
-    ownerRoyaltyUsd: 10.5,
-    bytesRouted: 92400000,
-    crossTalkBlocked: 0,
-    status: 'online',
-    isHomeRouter: true,
-    blindedIp: '100.64.20.1 [Cloaked]',
-    macAddressScrubbed: true,
-    realIpHidden: true,
-    antiMitmShield: 'Noise_XX_25519 + VRF Namespace Isolation',
-    registeredAt: Date.now()
-  },
-  {
-    id: 'router-friend1',
-    operatorId: 'friend1',
-    operatorName: 'Friend 1',
-    name: 'Friend 1 Home Router',
-    type: 'home_router_base',
-    location: 'Friend 1 Home Broadband Trunk',
-    maxSlots: 20,
-    activeSlots: 1,
-    bandwidthMbps: 100,
-    usableMeshMbps: 80,
-    householdReserveMbps: 20,
-    vrfNamespace: 'vrf-router-friend1-10.70.3.0/24',
-    subnetIndex: 3,
-    subnetCidr: '10.70.3.0/24',
-    hostSharePct: 70,
-    ownerSharePct: 30,
-    grossRevenueUsd: 20.0,
-    hostEarnedUsd: 14.0,
-    ownerRoyaltyUsd: 6.0,
-    bytesRouted: 51800000,
-    crossTalkBlocked: 0,
-    status: 'online',
-    isHomeRouter: true,
-    blindedIp: '100.64.30.1 [Cloaked]',
-    macAddressScrubbed: true,
-    realIpHidden: true,
-    antiMitmShield: 'Noise_XX_25519 + VRF Namespace Isolation',
-    registeredAt: Date.now()
+// --- Version 3 Multi-Tenant Persistent Network Registry (Real Production Data) ---
+// Each router is a Core Network Base Station whose capacity = hardware connections (maxSlots).
+// Every operator pool runs in a strictly isolated VRF namespace (10.70.X.0/24) with zero mock data.
+const REGISTRY_DIR = path.join(__dirname, 'data')
+const REGISTRY_FILE = path.join(REGISTRY_DIR, 'v3_registry.json')
+
+function initCleanRegistry() {
+  return {
+    routers: [
+      {
+        id: 'router-owner',
+        operatorId: 'owner',
+        operatorName: 'Me (App Owner)',
+        name: 'My Home Router (Base Station)',
+        type: 'home_router_base',
+        location: 'Owner Home Broadband Trunk',
+        maxSlots: 64,
+        activeSlots: 0,
+        bandwidthMbps: 300,
+        usableMeshMbps: 240,
+        householdReserveMbps: 60,
+        vrfNamespace: 'vrf-router-owner-10.70.1.0/24',
+        subnetIndex: 1,
+        subnetCidr: '10.70.1.0/24',
+        hostSharePct: 100,
+        ownerSharePct: 0,
+        grossRevenueUsd: 0.0,
+        hostEarnedUsd: 0.0,
+        ownerRoyaltyUsd: 0.0,
+        bytesRouted: 0,
+        crossTalkBlocked: 0,
+        status: 'online',
+        isHomeRouter: true,
+        blindedIp: '100.64.10.1 [Cloaked]',
+        macAddressScrubbed: true,
+        realIpHidden: true,
+        antiMitmShield: 'Noise_XX_25519 + VRF Namespace Isolation',
+        registeredAt: Date.now()
+      },
+      {
+        id: 'router-lec',
+        operatorId: 'lec',
+        operatorName: 'Lecturer (Lec)',
+        name: 'Lecturer Home Router',
+        type: 'home_router_base',
+        location: 'Lecturer Residence Fiber Trunk',
+        maxSlots: 32,
+        activeSlots: 0,
+        bandwidthMbps: 150,
+        usableMeshMbps: 120,
+        householdReserveMbps: 30,
+        vrfNamespace: 'vrf-router-lec-10.70.2.0/24',
+        subnetIndex: 2,
+        subnetCidr: '10.70.2.0/24',
+        hostSharePct: 70,
+        ownerSharePct: 30,
+        grossRevenueUsd: 0.0,
+        hostEarnedUsd: 0.0,
+        ownerRoyaltyUsd: 0.0,
+        bytesRouted: 0,
+        crossTalkBlocked: 0,
+        status: 'online',
+        isHomeRouter: true,
+        blindedIp: '100.64.20.1 [Cloaked]',
+        macAddressScrubbed: true,
+        realIpHidden: true,
+        antiMitmShield: 'Noise_XX_25519 + VRF Namespace Isolation',
+        registeredAt: Date.now()
+      },
+      {
+        id: 'router-friend1',
+        operatorId: 'friend1',
+        operatorName: 'Friend 1',
+        name: 'Friend 1 Home Router',
+        type: 'home_router_base',
+        location: 'Friend 1 Home Broadband Trunk',
+        maxSlots: 20,
+        activeSlots: 0,
+        bandwidthMbps: 100,
+        usableMeshMbps: 80,
+        householdReserveMbps: 20,
+        vrfNamespace: 'vrf-router-friend1-10.70.3.0/24',
+        subnetIndex: 3,
+        subnetCidr: '10.70.3.0/24',
+        hostSharePct: 70,
+        ownerSharePct: 30,
+        grossRevenueUsd: 0.0,
+        hostEarnedUsd: 0.0,
+        ownerRoyaltyUsd: 0.0,
+        bytesRouted: 0,
+        crossTalkBlocked: 0,
+        status: 'online',
+        isHomeRouter: true,
+        blindedIp: '100.64.30.1 [Cloaked]',
+        macAddressScrubbed: true,
+        realIpHidden: true,
+        antiMitmShield: 'Noise_XX_25519 + VRF Namespace Isolation',
+        registeredAt: Date.now()
+      }
+    ],
+    ledger: []
   }
-]
-const v3SettlementLedger = [
-  {
-    txId: 'tx-v3-init-1',
-    routerId: 'router-lec',
-    operatorName: 'Lecturer (Lec)',
-    grossUsd: 35.0,
-    hostEarnedUsd: 24.5,
-    ownerRoyaltyUsd: 10.5,
-    splitLabel: '70% Host / 30% Owner',
-    timestamp: Date.now() - 3600000
-  },
-  {
-    txId: 'tx-v3-init-2',
-    routerId: 'router-friend1',
-    operatorName: 'Friend 1',
-    grossUsd: 20.0,
-    hostEarnedUsd: 14.0,
-    ownerRoyaltyUsd: 6.0,
-    splitLabel: '70% Host / 30% Owner',
-    timestamp: Date.now() - 1800000
+}
+
+function loadRegistry() {
+  try {
+    if (fs.existsSync(REGISTRY_FILE)) {
+      const content = fs.readFileSync(REGISTRY_FILE, 'utf8')
+      const parsed = JSON.parse(content)
+      if (Array.isArray(parsed.routers)) return parsed
+    }
+  } catch (err) {
+    console.warn('[Registry] Warning loading registry, reinitializing clean store:', err.message)
   }
-]
+  const clean = initCleanRegistry()
+  saveRegistry(clean)
+  return clean
+}
+
+function saveRegistry(data) {
+  try {
+    if (!fs.existsSync(REGISTRY_DIR)) {
+      fs.mkdirSync(REGISTRY_DIR, { recursive: true })
+    }
+    fs.writeFileSync(REGISTRY_FILE, JSON.stringify(data, null, 2), 'utf8')
+  } catch (err) {
+    console.error('[Registry] Error persisting registry:', err.message)
+  }
+}
+
+const registryState = loadRegistry()
+let providerUplinks = registryState.routers
+const v3SettlementLedger = registryState.ledger
 const channelTasks = new Map()
 const providerListeners = new Set()
 
@@ -411,11 +427,17 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  // --- API ROUTE: Download Mobile WireGuard Profile (.conf) ---
+  // --- API ROUTE: Download Mobile WireGuard Profile (.conf) for Specific Home Router Base ---
   if (url.pathname === '/api/tunnel/wireguard.conf' && req.method === 'GET') {
+    const requestedRouterId = url.searchParams.get('routerId') || 'router-owner'
+    const targetRouter = providerUplinks.find((r) => r.id === requestedRouterId) || providerUplinks[0]
+    const subnetIdx = targetRouter ? (targetRouter.subnetIndex || 1) : 1
+    const slotNum = (targetRouter ? (targetRouter.activeSlots || 0) : 0) + 2
+    const clientVrfIp = `10.70.${subnetIdx}.${Math.min(254, slotNum)}/24`
+
     const confContent = `[Interface]
 PrivateKey = OFZmrh2n9ATyqyBDvTSLzWZcQ7yEHmqpV+VRQ99ZEUI=
-Address = 10.66.66.2/24
+Address = ${clientVrfIp}
 DNS = 1.1.1.1, 9.9.9.9
 MTU = 1360
 
@@ -428,7 +450,7 @@ PersistentKeepalive = 15
 `
     res.writeHead(200, {
       'Content-Type': 'application/x-wireguard-profile',
-      'Content-Disposition': 'attachment; filename="aegis-mobile.conf"'
+      'Content-Disposition': `attachment; filename="aegis-${targetRouter ? targetRouter.id : 'trunk'}.conf"`
     })
     res.end(confContent)
     return
@@ -460,7 +482,7 @@ PersistentKeepalive = 15
   }
 
   // --- API ROUTE: Download Native Android APK ---
-  if ((url.pathname === '/aegis.apk' || url.pathname === '/download/aegis.apk') && req.method === 'GET') {
+  if ((url.pathname === '/aegis.apk' || url.pathname === '/download/aegis.apk' || url.pathname === '/AegisProtocol.apk') && (req.method === 'GET' || req.method === 'HEAD')) {
     const apkPath = path.join(__dirname, 'AegisProtocol.apk')
     if (fs.existsSync(apkPath)) {
       const stat = fs.statSync(apkPath)
@@ -470,6 +492,10 @@ PersistentKeepalive = 15
         'Content-Disposition': 'attachment; filename="AegisProtocol.apk"',
         'Cache-Control': 'no-cache'
       })
+      if (req.method === 'HEAD') {
+        res.end()
+        return
+      }
       fs.createReadStream(apkPath).pipe(res)
       return
     } else {
@@ -557,6 +583,7 @@ PersistentKeepalive = 15
           v3SettlementLedger.unshift(settlement)
           if (v3SettlementLedger.length > 100) v3SettlementLedger.pop()
         }
+        saveRegistry({ routers: providerUplinks, ledger: v3SettlementLedger })
 
         const peerRecord = {
           id: clientId,
@@ -862,6 +889,7 @@ PersistentKeepalive = 15
         } else {
           providerUplinks.push(updatedRouter)
         }
+        saveRegistry({ routers: providerUplinks, ledger: v3SettlementLedger })
 
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(
@@ -907,7 +935,7 @@ PersistentKeepalive = 15
         targetRouter.activeSlots = (targetRouter.activeSlots || 0) + 1
         const slotNumber = targetRouter.activeSlots
         const vrfVirtualIp = `10.70.${targetRouter.subnetIndex || 1}.${Math.min(254, slotNumber + 1)}`
-        const feeUsd = typeof data.feeUsd === 'number' ? data.feeUsd : 0
+        const feeUsd = typeof data.feeUsd === 'number' ? data.feeUsd : (typeof data.slotFeeUsd === 'number' ? data.slotFeeUsd : 0)
         let settlement = null
         if (feeUsd > 0) {
           const hostEarned = +(feeUsd * ((targetRouter.hostSharePct || 70) / 100)).toFixed(4)
@@ -929,6 +957,7 @@ PersistentKeepalive = 15
         }
 
         const sessionToken = crypto.randomBytes(16).toString('hex')
+        saveRegistry({ routers: providerUplinks, ledger: v3SettlementLedger })
         const peerRecord = {
           id: data.clientId || ('slot-peer-' + crypto.randomBytes(3).toString('hex')),
           sessionToken,
@@ -980,9 +1009,10 @@ PersistentKeepalive = 15
         if (peer && data.sessionToken) {
           activePeers.delete(data.sessionToken)
         }
-        if (targetRouter && (targetRouter.activeSlots || 0) > 1) {
+        if (targetRouter && (targetRouter.activeSlots || 0) > 0) {
           targetRouter.activeSlots -= 1
         }
+        saveRegistry({ routers: providerUplinks, ledger: v3SettlementLedger })
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(
           JSON.stringify({
@@ -1015,6 +1045,7 @@ PersistentKeepalive = 15
 
         if (srcRouter.id !== dstRouter.id || srcRouter.vrfNamespace !== dstRouter.vrfNamespace) {
           srcRouter.crossTalkBlocked = (srcRouter.crossTalkBlocked || 0) + 1
+          saveRegistry({ routers: providerUplinks, ledger: v3SettlementLedger })
           res.writeHead(403, { 'Content-Type': 'application/json' })
           res.end(
             JSON.stringify({
@@ -1068,6 +1099,7 @@ PersistentKeepalive = 15
         if (typeof data.maxSlots === 'number') {
           targetRouter.maxSlots = Math.max(1, Math.min(250, data.maxSlots))
         }
+        saveRegistry({ routers: providerUplinks, ledger: v3SettlementLedger })
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(
           JSON.stringify({
@@ -1200,7 +1232,10 @@ echo "🎉 Router $ROUTER_NAME ($MAX_SLOTS Slots) is now an isolated V3 Core Bas
         // FR-02: Enforce VRF Multi-Tenant Isolation if source & target routers are specified
         if (data.sourceRouterId && data.targetRouterId && data.sourceRouterId !== data.targetRouterId) {
           const srcPool = providerUplinks.find((p) => p.id === data.sourceRouterId)
-          if (srcPool) srcPool.crossTalkBlocked = (srcPool.crossTalkBlocked || 0) + 1
+          if (srcPool) {
+            srcPool.crossTalkBlocked = (srcPool.crossTalkBlocked || 0) + 1
+            saveRegistry({ routers: providerUplinks, ledger: v3SettlementLedger })
+          }
           res.writeHead(403, { 'Content-Type': 'application/json' })
           res.end(
             JSON.stringify({

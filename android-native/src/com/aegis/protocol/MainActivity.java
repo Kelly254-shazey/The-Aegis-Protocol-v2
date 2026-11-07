@@ -53,6 +53,7 @@ public class MainActivity extends Activity {
     private static final String PREFS_NAME = "aegis_config";
     private static final String KEY_HOST = "endpoint_host";
     private static final String KEY_PORT = "endpoint_port";
+    private static final String KEY_ROUTER_ID = "selected_router_id";
 
     private WebView mWebView;
     private Backend mBackend;
@@ -159,6 +160,10 @@ public class MainActivity extends Activity {
         return mPrefs.getInt(KEY_PORT, 51820);
     }
 
+    private String getSavedSelectedRouter() {
+        return mPrefs.getString(KEY_ROUTER_ID, "router-owner");
+    }
+
     private void promptAndConnect(final boolean skipPrompt) {
         if (skipPrompt) {
             executeVpnPreparation();
@@ -243,11 +248,16 @@ public class MainActivity extends Activity {
                     final String endpointHost = getSavedHost();
                     final int endpointPort = getSavedPort();
 
+                    final String selectedRouter = getSavedSelectedRouter();
+                    int fallbackSubnet = 1;
+                    if (selectedRouter.contains("lec")) fallbackSubnet = 2;
+                    else if (selectedRouter.contains("friend1")) fallbackSubnet = 3;
+
                     String wgConfigString = null;
                     try {
                         String cleanHost = endpointHost.replaceFirst("^https?://", "");
                         String schemeHost = cleanHost.contains(":") ? cleanHost.split(":")[0] : cleanHost;
-                        String syncUrl = "https://" + schemeHost.replaceAll("\\.", "-") + ".sslip.io/api/tunnel/wireguard.conf";
+                        String syncUrl = "https://" + schemeHost.replaceAll("\\.", "-") + ".sslip.io/api/tunnel/wireguard.conf?routerId=" + selectedRouter;
                         URL url = new URL(syncUrl);
                         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                         conn.setConnectTimeout(2500);
@@ -278,7 +288,7 @@ public class MainActivity extends Activity {
                             String fetched = sb.toString();
                             if (fetched.contains("[Interface]") && fetched.contains("[Peer]")) {
                                 wgConfigString = fetched;
-                                Log.i(TAG, "WireGuard config synced directly from Cloud Relay.");
+                                Log.i(TAG, "WireGuard config synced directly from Cloud Relay for router: " + selectedRouter);
                             }
                         }
                     } catch (Exception syncErr) {
@@ -289,7 +299,7 @@ public class MainActivity extends Activity {
                         wgConfigString =
                                 "[Interface]\n" +
                                 "PrivateKey = OFZmrh2n9ATyqyBDvTSLzWZcQ7yEHmqpV+VRQ99ZEUI=\n" +
-                                "Address = 10.66.66.2/24\n" +
+                                "Address = 10.70." + fallbackSubnet + ".2/24\n" +
                                 "DNS = 1.1.1.1, 9.9.9.9\n" +
                                 "MTU = 1360\n\n" +
                                 "[Peer]\n" +
@@ -441,6 +451,19 @@ public class MainActivity extends Activity {
                     .putInt(KEY_PORT, port)
                     .apply();
             Log.i(TAG, "Updated Endpoint: " + host + ":" + port);
+        }
+
+        @JavascriptInterface
+        public void setSelectedRouter(String routerId) {
+            if (routerId != null && !routerId.trim().isEmpty()) {
+                mPrefs.edit().putString(KEY_ROUTER_ID, routerId.trim()).apply();
+                Log.i(TAG, "Active Home Router Base set to: " + routerId);
+            }
+        }
+
+        @JavascriptInterface
+        public String getSelectedRouter() {
+            return getSavedSelectedRouter();
         }
 
         @JavascriptInterface

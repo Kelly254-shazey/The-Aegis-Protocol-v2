@@ -965,22 +965,36 @@
   </div>
 
   <script>
-    const CLOUD_API_BASE = 'https://172-209-217-140.sslip.io';
+    function getCloudApiBase() {
+      if (window.location && window.location.protocol.startsWith('http')) {
+        return window.location.origin;
+      }
+      if (window.AndroidAegis && window.AndroidAegis.getEndpoint) {
+        const ep = window.AndroidAegis.getEndpoint() || '';
+        const host = ep.split(':')[0] || '172.209.217.140';
+        if (host.includes('127.0.0.1') || host.includes('localhost') || host.includes('10.0.2.2')) {
+          return `http://${host}:3888`;
+        }
+        return `https://${host.replace(/\./g, '-')}.sslip.io`;
+      }
+      return 'https://172-209-217-140.sslip.io';
+    }
+
     let isConnected = false;
     let isConnecting = false;
     let sessionSeconds = 0;
     let timerInterval = null;
     let currentSessionToken = null;
 
-    // Default V3 Seeded Operator Router Pools (1..N)
+    // Real Clean Initial State — Zero Mock Data
     let v3RouterPools = [
       {
         id: 'router-owner',
         operatorId: 'owner',
-        operatorName: 'Master App Owner (Me)',
-        name: 'Owner Home Router (Master Base)',
+        operatorName: 'Me (App Owner)',
+        name: 'My Home Router (Base Station)',
         maxSlots: 64,
-        activeSlots: 1,
+        activeSlots: 0,
         bandwidthMbps: 300,
         usableMeshMbps: 240,
         vrfNamespace: 'vrf-router-owner-10.70.1.0/24',
@@ -988,9 +1002,10 @@
         subnetIndex: 1,
         hostSharePct: 100,
         ownerSharePct: 0,
-        grossRevenueUsd: 48.0,
-        hostEarnedUsd: 48.0,
+        grossRevenueUsd: 0.0,
+        hostEarnedUsd: 0.0,
         ownerRoyaltyUsd: 0.0,
+        bytesRouted: 0,
         crossTalkBlocked: 0
       },
       {
@@ -999,7 +1014,7 @@
         operatorName: 'Lecturer (Lec)',
         name: 'Lecturer Home Router',
         maxSlots: 32,
-        activeSlots: 1,
+        activeSlots: 0,
         bandwidthMbps: 150,
         usableMeshMbps: 120,
         vrfNamespace: 'vrf-router-lec-10.70.2.0/24',
@@ -1007,9 +1022,10 @@
         subnetIndex: 2,
         hostSharePct: 70,
         ownerSharePct: 30,
-        grossRevenueUsd: 35.0,
-        hostEarnedUsd: 24.5,
-        ownerRoyaltyUsd: 10.5,
+        grossRevenueUsd: 0.0,
+        hostEarnedUsd: 0.0,
+        ownerRoyaltyUsd: 0.0,
+        bytesRouted: 0,
         crossTalkBlocked: 0
       },
       {
@@ -1018,7 +1034,7 @@
         operatorName: 'Friend 1',
         name: 'Friend 1 Home Router',
         maxSlots: 20,
-        activeSlots: 1,
+        activeSlots: 0,
         bandwidthMbps: 100,
         usableMeshMbps: 80,
         vrfNamespace: 'vrf-router-friend1-10.70.3.0/24',
@@ -1026,34 +1042,16 @@
         subnetIndex: 3,
         hostSharePct: 70,
         ownerSharePct: 30,
-        grossRevenueUsd: 20.0,
-        hostEarnedUsd: 14.0,
-        ownerRoyaltyUsd: 6.0,
+        grossRevenueUsd: 0.0,
+        hostEarnedUsd: 0.0,
+        ownerRoyaltyUsd: 0.0,
+        bytesRouted: 0,
         crossTalkBlocked: 0
       }
     ];
 
     let v3ActivePeers = [];
-    let v3SettlementLedger = [
-      {
-        txId: 'tx-v3-init-1',
-        routerId: 'router-lec',
-        operatorName: 'Lecturer (Lec)',
-        grossUsd: 35.0,
-        hostEarnedUsd: 24.5,
-        ownerRoyaltyUsd: 10.5,
-        splitLabel: '70% Host / 30% Owner'
-      },
-      {
-        txId: 'tx-v3-init-2',
-        routerId: 'router-friend1',
-        operatorName: 'Friend 1',
-        grossUsd: 20.0,
-        hostEarnedUsd: 14.0,
-        ownerRoyaltyUsd: 6.0,
-        splitLabel: '70% Host / 30% Owner'
-      }
-    ];
+    let v3SettlementLedger = [];
 
     window.addEventListener('DOMContentLoaded', () => {
       initApp();
@@ -1089,7 +1087,7 @@
     }
 
     function refreshV3Architecture() {
-      fetch(CLOUD_API_BASE + '/api/v3/architecture')
+      fetch(getCloudApiBase() + '/api/v3/architecture')
         .then(r => r.json())
         .then(data => {
           if (data && Array.isArray(data.routerPools) && data.routerPools.length > 0) {
@@ -1127,7 +1125,7 @@
       v3RouterPools.forEach(p => {
         const opt1 = document.createElement('option');
         opt1.value = p.id;
-        opt1.textContent = `${p.operatorName || p.name} [${p.activeSlots || 1}/${p.maxSlots || 32} Slots • ${p.subnetCidr || '10.70.1.0/24'}]`;
+        opt1.textContent = `${p.operatorName || p.name} [${p.activeSlots || 0}/${p.maxSlots || 32} Slots • ${p.subnetCidr || '10.70.1.0/24'}]`;
         homeSel.appendChild(opt1);
 
         const opt2 = document.createElement('option');
@@ -1150,14 +1148,14 @@
       const pool = v3RouterPools.find(r => r.id === selId) || v3RouterPools[0];
       if (!pool) return;
 
-      const active = pool.activeSlots || 1;
+      const active = pool.activeSlots || 0;
       const max = pool.maxSlots || 64;
-      const pct = Math.min(100, Math.max(6, Math.round((active / max) * 100)));
+      const pct = Math.min(100, Math.round((active / max) * 100));
 
       document.getElementById('selectedRouterSlotsBadge').innerText = `${active} / ${max} SLOTS`;
       document.getElementById('trunkSlotBar').style.width = pct + '%';
       document.getElementById('trunkVrfLabel').innerText = pool.vrfNamespace;
-      document.getElementById('statMeshIp').innerText = `10.70.${pool.subnetIndex || 1}.${active + 1} (Slot #${active})`;
+      document.getElementById('statMeshIp').innerText = `10.70.${pool.subnetIndex || 1}.${active + 2} (Slot #${active + 1})`;
       document.getElementById('statAdapter').innerText = `${max} Max Connections`;
 
       document.getElementById('modalSelectedRouterName').innerText = `${pool.name} (${max} Slots)`;
@@ -1181,7 +1179,7 @@
       document.getElementById('opHeroTitle').innerText = `${pool.name} Pool`;
       document.getElementById('opHeroSub').innerHTML =
         `Traffic Capacity = Hardware Router Max Connections (<b style="color:var(--cyan);">${pool.maxSlots} Slots</b>) • ${pool.vrfNamespace}`;
-      document.getElementById('opStatSlots').innerText = `${pool.activeSlots || 1} / ${pool.maxSlots}`;
+      document.getElementById('opStatSlots').innerText = `${pool.activeSlots || 0} / ${pool.maxSlots}`;
       document.getElementById('opStatBw').innerText = `${pool.usableMeshMbps || Math.round((pool.bandwidthMbps || 100) * 0.8)} Mbps`;
       document.getElementById('opStatProfit').innerText = `$${(pool.hostEarnedUsd || 0).toFixed(2)}`;
       document.getElementById('opSlotLimitLabel').innerText = `up to ${pool.maxSlots} people`;
@@ -1197,41 +1195,48 @@
     function renderOperatorDevices(pool) {
       const container = document.getElementById('devicesContainer');
       const poolPeers = v3ActivePeers.filter(p => p.routerId === pool.id);
-      const totalShown = Math.max(1, poolPeers.length + 1);
-      document.getElementById('clientCount').innerText = `${pool.activeSlots || totalShown} / ${pool.maxSlots}`;
+      document.getElementById('clientCount').innerText = `${pool.activeSlots || poolPeers.length} / ${pool.maxSlots}`;
 
       let html = `
         <div class="device-card">
           <div class="device-header">
-            <div class="device-ip">🏠 ${pool.operatorName || pool.name} (Primary Host)</div>
-            <div class="device-tag vrf">SLOT #1 • PRIMARY</div>
+            <div class="device-ip">🏠 ${pool.operatorName || pool.name} (Primary Host Base)</div>
+            <div class="device-tag vrf">BASE STATION</div>
           </div>
           <div class="device-metrics">
-            <span>VRF IP: 10.70.${pool.subnetIndex || 1}.2</span>
-            <span>Namespace: ${pool.vrfNamespace}</span>
+            <span>VRF Subnet: ${pool.subnetCidr || ('10.70.' + pool.subnetIndex + '.0/24')}</span>
+            <span>Capacity: ${pool.maxSlots} Slots ($C_{\\max}$)</span>
           </div>
         </div>
       `;
 
-      poolPeers.forEach((peer, idx) => {
+      if (poolPeers.length === 0) {
         html += `
-          <div class="device-card">
-            <div class="device-header">
-              <div class="device-ip">📱 ${peer.deviceName || peer.id}</div>
-              <div class="device-tag allowed">SLOT #${peer.slotNumber || (idx + 2)}/${pool.maxSlots}</div>
-            </div>
-            <div class="device-metrics">
-              <span>VRF IP: ${peer.vrfVirtualIp || ('10.70.' + (pool.subnetIndex || 1) + '.' + (idx + 3))}</span>
-              <span>Isolated: ✓ Zero Cross-Bridge</span>
-            </div>
-            <div class="device-actions">
-              <button class="btn-device-action kick" onclick="releaseRouterSlot('${pool.id}', '${peer.sessionToken}')">
-                Release Slot
-              </button>
-            </div>
+          <div style="text-align: center; color: var(--text-muted); font-size: 11.5px; padding: 14px 0;">
+            No secondary devices connected to this router yet.<br/>Use "Add Person / Device" above or share a slot pass!
           </div>
         `;
-      });
+      } else {
+        poolPeers.forEach((peer, idx) => {
+          html += `
+            <div class="device-card">
+              <div class="device-header">
+                <div class="device-ip">📱 ${peer.deviceName || peer.id}</div>
+                <div class="device-tag allowed">SLOT #${peer.slotNumber || (idx + 1)}/${pool.maxSlots}</div>
+              </div>
+              <div class="device-metrics">
+                <span>VRF IP: ${peer.vrfVirtualIp || ('10.70.' + (pool.subnetIndex || 1) + '.' + (idx + 2))}</span>
+                <span>Isolated: ✓ Zero Cross-Bridge</span>
+              </div>
+              <div class="device-actions">
+                <button class="btn-device-action kick" onclick="releaseRouterSlot('${pool.id}', '${peer.sessionToken}')">
+                  Release Slot
+                </button>
+              </div>
+            </div>
+          `;
+        });
+      }
 
       container.innerHTML = html;
     }
@@ -1248,7 +1253,7 @@
       box.style.color = 'var(--amber)';
       box.innerText = 'Syncing Hardware Router Base Station capacity to V3 Cloud...';
 
-      fetch(CLOUD_API_BASE + '/api/v3/operator/register', {
+      fetch(getCloudApiBase() + '/api/v3/operator/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1266,36 +1271,8 @@
           refreshV3Architecture();
         })
         .catch(() => {
-          // Local fallback update
-          const existing = v3RouterPools.find(r => r.id === routerId);
-          if (existing) {
-            existing.name = name;
-            existing.maxSlots = maxSlots;
-            existing.bandwidthMbps = bandwidthMbps;
-            existing.usableMeshMbps = Math.round(bandwidthMbps * 0.8);
-          } else {
-            const idx = v3RouterPools.length + 1;
-            v3RouterPools.push({
-              id: routerId,
-              operatorName: name,
-              name,
-              maxSlots,
-              activeSlots: 1,
-              bandwidthMbps,
-              usableMeshMbps: Math.round(bandwidthMbps * 0.8),
-              vrfNamespace: `vrf-${routerId}-10.70.${idx}.0/24`,
-              subnetCidr: `10.70.${idx}.0/24`,
-              subnetIndex: idx,
-              hostSharePct: 70,
-              ownerSharePct: 30,
-              grossRevenueUsd: 0,
-              hostEarnedUsd: 0,
-              ownerRoyaltyUsd: 0
-            });
-          }
-          box.style.color = '#34d399';
-          box.innerHTML = `<b>[✓] Router [${name}] configured with ${maxSlots} connection slots!</b>`;
-          renderAllV3Views();
+          box.style.color = 'var(--red)';
+          box.innerHTML = `<b>[✕] Failed to sync with Cloud Relay. Check network.</b>`;
         });
     }
 
@@ -1308,13 +1285,13 @@
       const box = document.getElementById('voucherResultBox');
       box.style.display = 'block';
 
-      if ((pool.activeSlots || 1) >= pool.maxSlots) {
+      if ((pool.activeSlots || 0) >= pool.maxSlots) {
         box.style.color = 'var(--red)';
         box.innerHTML = `<b>[✕] SLOT_CAPACITY_EXCEEDED:</b> ${pool.name} hardware limit (${pool.maxSlots}/${pool.maxSlots} connections) is full!`;
         return;
       }
 
-      fetch(CLOUD_API_BASE + '/api/v3/slot/allocate', {
+      fetch(getCloudApiBase() + '/api/v3/slot/allocate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ routerId, deviceName, feeUsd })
@@ -1335,33 +1312,20 @@
           document.getElementById('inputClientDeviceName').value = '';
           refreshV3Architecture();
         })
-        .catch(() => {
-          pool.activeSlots = (pool.activeSlots || 1) + 1;
-          const hostCut = +(feeUsd * ((pool.hostSharePct || 70) / 100)).toFixed(2);
-          const ownerCut = +(feeUsd * ((pool.ownerSharePct || 30) / 100)).toFixed(2);
-          pool.grossRevenueUsd = (pool.grossRevenueUsd || 0) + feeUsd;
-          pool.hostEarnedUsd = (pool.hostEarnedUsd || 0) + hostCut;
-          pool.ownerRoyaltyUsd = (pool.ownerRoyaltyUsd || 0) + ownerCut;
-          box.style.color = '#34d399';
-          box.innerHTML =
-            `<b>[✓] Slot #${pool.activeSlots}/${pool.maxSlots} Allocated on ${pool.name}!</b><br/>` +
-            `Profit Split: Host <b>$${hostCut.toFixed(2)}</b> | Owner <b>$${ownerCut.toFixed(2)}</b>`;
-          renderAllV3Views();
+        .catch(err => {
+          box.style.color = 'var(--red)';
+          box.innerHTML = `<b>[✕] Request error: ${err.message}</b>`;
         });
     }
 
     function releaseRouterSlot(routerId, sessionToken) {
-      fetch(CLOUD_API_BASE + '/api/v3/slot/release', {
+      fetch(getCloudApiBase() + '/api/v3/slot/release', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ routerId, sessionToken })
       })
         .then(() => refreshV3Architecture())
-        .catch(() => {
-          const pool = v3RouterPools.find(r => r.id === routerId);
-          if (pool && pool.activeSlots > 1) pool.activeSlots--;
-          renderAllV3Views();
-        });
+        .catch(() => {});
     }
 
     function generateRouterSlotPass(durationMinutes) {
@@ -1379,7 +1343,7 @@
 
     function renderOwnerDashboard() {
       const totalSlots = v3RouterPools.reduce((s, r) => s + (r.maxSlots || 32), 0);
-      const activeSlots = v3RouterPools.reduce((s, r) => s + (r.activeSlots || 1), 0);
+      const activeSlots = v3RouterPools.reduce((s, r) => s + (r.activeSlots || 0), 0);
       const grossRev = v3RouterPools.reduce((s, r) => s + (r.grossRevenueUsd || 0), 0);
       const hostPayouts = v3RouterPools.reduce((s, r) => s + (r.hostEarnedUsd || 0), 0);
       const ownerRoyalties = v3RouterPools.reduce((s, r) => s + (r.ownerRoyaltyUsd || 0), 0);
@@ -1394,12 +1358,12 @@
 
       const listEl = document.getElementById('ownerRoutersList');
       listEl.innerHTML = v3RouterPools.map(r => {
-        const pct = Math.min(100, Math.round(((r.activeSlots || 1) / (r.maxSlots || 32)) * 100));
+        const pct = Math.min(100, Math.round(((r.activeSlots || 0) / (r.maxSlots || 32)) * 100));
         return `
           <div class="device-card">
             <div class="device-header">
               <div class="device-ip">🖧 ${r.name}</div>
-              <div class="device-tag vrf">${r.activeSlots || 1}/${r.maxSlots} SLOTS</div>
+              <div class="device-tag vrf">${r.activeSlots || 0}/${r.maxSlots} SLOTS</div>
             </div>
             <div class="slot-bar-wrap" style="margin: 4px 0;">
               <div class="slot-bar-fill" style="width:${pct}%;"></div>
@@ -1418,18 +1382,26 @@
       }).join('');
 
       const ledgerEl = document.getElementById('ownerLedgerList');
-      ledgerEl.innerHTML = v3SettlementLedger.slice(0, 6).map(tx => `
-        <div class="device-card" style="padding: 9px 11px;">
-          <div class="device-header">
-            <div class="device-ip" style="font-size:11.5px;">💳 ${tx.operatorName} (${tx.routerId})</div>
-            <div class="device-tag allowed">+$${(tx.grossUsd || 0).toFixed(2)}</div>
+      if (v3SettlementLedger.length === 0) {
+        ledgerEl.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); font-size: 11.5px; padding: 14px 0;">
+            No traffic transactions recorded yet.<br/>Real profit sharing will register here as devices connect and route traffic.
           </div>
-          <div class="device-metrics">
-            <span>Host (70%): $${(tx.hostEarnedUsd || 0).toFixed(2)}</span>
-            <span style="color:var(--amber);">Owner Share (30%): $${(tx.ownerRoyaltyUsd || 0).toFixed(2)}</span>
+        `;
+      } else {
+        ledgerEl.innerHTML = v3SettlementLedger.slice(0, 15).map(tx => `
+          <div class="device-card" style="padding: 9px 11px;">
+            <div class="device-header">
+              <div class="device-ip" style="font-size:11.5px;">💳 ${tx.operatorName} (${tx.routerId})</div>
+              <div class="device-tag allowed">+$${(tx.grossUsd || 0).toFixed(2)}</div>
+            </div>
+            <div class="device-metrics">
+              <span>Host Share (70%): $${(tx.hostEarnedUsd || 0).toFixed(2)}</span>
+              <span style="color:var(--amber);">Owner Royalty (30%): $${(tx.ownerRoyaltyUsd || 0).toFixed(2)}</span>
+            </div>
           </div>
-        </div>
-      `).join('');
+        `).join('');
+      }
     }
 
     /* Modal Dialog Controls */
@@ -1468,20 +1440,25 @@
       const selectedRouterId = document.getElementById('selectHomeRouter').value || 'router-owner';
       setConnectingState('ALLOCATING HOME ROUTER SLOT & VRF...');
 
-      // Allocate slot on selected Home Router Base Station in Cloud Relay
-      fetch(CLOUD_API_BASE + '/api/connect', {
+      // Notify native Android WireGuard layer which router is target
+      if (window.AndroidAegis && typeof window.AndroidAegis.setSelectedRouter === 'function') {
+        window.AndroidAegis.setSelectedRouter(selectedRouterId);
+      }
+
+      // Real slot allocation on selected Home Router Base Station in Cloud Relay
+      fetch(getCloudApiBase() + '/api/v3/slot/allocate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           routerId: selectedRouterId,
-          deviceName: 'Aegis V3 Roaming Phone',
-          tier: 'free'
+          deviceName: 'Aegis V3 Operator Client',
+          slotFeeUsd: 1.00
         })
       })
         .then(r => r.json())
         .then(data => {
-          if (data && data.token) {
-            currentSessionToken = data.token;
+          if (data && data.sessionToken) {
+            currentSessionToken = data.sessionToken;
           }
           refreshV3Architecture();
         })
@@ -1503,11 +1480,13 @@
       setConnectingState('RELEASING ROUTER SLOT...');
       const selectedRouterId = document.getElementById('selectHomeRouter').value || 'router-owner';
       if (currentSessionToken) {
-        fetch(CLOUD_API_BASE + '/api/v3/slot/release', {
+        fetch(getCloudApiBase() + '/api/v3/slot/release', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ routerId: selectedRouterId, sessionToken: currentSessionToken })
-        }).catch(() => {});
+        })
+          .then(() => refreshV3Architecture())
+          .catch(() => {});
       }
 
       if (window.AndroidAegis) {
@@ -1595,7 +1574,7 @@
       box.style.color = 'var(--amber)';
       box.innerText = `⚡ Testing V3 Carrier Trunk via ${pool.name} (${pool.vrfNamespace})...`;
 
-      fetch(CLOUD_API_BASE + '/api/channel/browse', {
+      fetch(getCloudApiBase() + '/api/channel/browse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1626,7 +1605,7 @@
       box.style.color = 'var(--amber)';
       box.innerText = '🔒 Auditing VRF Boundary: Attempting unauthorized cross-bridge from Lecturer Router (10.70.2.0/24) -> Friend 1 Router (10.70.3.0/24)...';
 
-      fetch(CLOUD_API_BASE + '/api/v3/verify-isolation', {
+      fetch(getCloudApiBase() + '/api/v3/verify-isolation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
